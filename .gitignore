@@ -1,4 +1,4 @@
-tools/
+/tools/
 images/
 dist/*.zip
 dist/*.img
