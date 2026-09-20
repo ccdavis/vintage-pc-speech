@@ -1,0 +1,54 @@
+espk_16k_n5                              WER  18.7%  (45/241)
+      [ 5/10] Hello, this is the classic Macizer speaking of 3DOS.
+      [ 1/ 9] The quick round fox jumps over the lazy dog.
+      [ 1/ 9] Please open the dial and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the 19th of September.
+      [ 1/ 9] The screen reader is loaded. Press escape to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 2/11] Turn left out of the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty. Can you charge it?
+      [ 3/11] The meeting starts at half past two, it's a small clue.
+      [ 7/10] She was red and will contact us at the corner now.
+      [ 3/ 9] We'll rape this afternoon, so take your umbrella.
+      [ 0/10] 0 5 9 2 7 3 1 8 4 6
+      [ 4/10] The children are ladies and daughters behind the house.
+      [ 3/12] The red will come the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 2/10] The train to London leaves from plan 47 at noon.
+      [ 3/ 9] Close the door quietly and the baby is sleeping on stairs.
+      [ 0/12] We watched a long movie, and then walked home in the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 1/10] Please call the doctor and ask about the best results.
+      [ 0/10] 4-8-1-5-9-3-7-2-0-6
+      [ 0/11] His new car is dark blue with a large silver stripe.
+      [ 6/10] But when the forecast is as it will be counted this weekend...
+      [ 2/10] 25 people came to the party on Friday night.
+espk_11k_n4_g3                           WER  22.0%  (53/241)
+      [ 4/10] Hello, this is the classic synthesizer speaking of 3DOS.
+      [ 2/ 9] but we're brown fox jumps over the lazy dog.
+      [ 0/ 9] Please open the file and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the 19th of September.
+      [ 1/ 9] The screen reader is loaded. Press escape to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 2/11] to the left at the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty. Can you charge it?
+      [ 0/11] The meeting starts at half past two in the small room.
+      [ 6/10] She was red and they'll contact us at the corner shop.
+      [ 0/ 9] It will rain this afternoon, so take your umbrella.
+      [10/10] 05927-31846
+      [ 3/10] The children are laying in the dot and behind the house.
+      [ 2/12] Put the red walk up the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 1/10] The train to London leads from platform 7 at noon.
+      [ 0/ 9] Close the door quietly, the baby is sleeping upstairs.
+      [ 2/12] We watched a long movie and then walked over the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 4/10] Please go over doctor and ask her about the best results.
+      [10/10] 4815937206
+      [ 2/11] This new car is not blue with a large silver stripe.
+      [ 3/10] But when the forecast says it will be sunny this weekend...
+      [ 0/10] Twenty-five people came to the party on Friday night.
+
+SUMMARY (base.en stable)
+  espk_16k_n5                               18.7%
+  espk_11k_n4_g3                            22.0%

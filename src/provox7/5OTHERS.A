@@ -1,0 +1,893 @@
+; provox 7.x -- 5others.a
+isnumber: ; entry
+ cmp ah, 71
+ jb > l1
+ cmp ah, 82
+ ja > l1
+isdigit: ; entry
+ cmp al, '0'
+ jb > l1
+ cmp al, '9'
+ ja > l1
+ stc ; yes
+ ret
+l1: clc ; no
+ ret
+; end of isdigit
+; end of isnumber
+get2digits: ; entry
+ and ax, 8 or 4 or 2 or 1
+ mov cx, ax
+ mov al, digit
+ and al, 8 or 4 or 2 or 1
+ mov bl, 10
+ mul bl
+ add ax, cx
+ ret
+; end of get2digits
+scantest: ; entry
+ mov w scantemp, 0
+l1: push cx, dx
+ call regmul
+ mov bx, scantemp
+ mov ah, scanterm[bx]
+ inc w scantemp
+ pop dx, cx
+ cmp ah, al
+ jne > l2
+ inc dl
+ loop l1
+ stc ; found it
+ ret
+l2: clc ; not found
+ ret
+scantemp dw 0
+; end of scantest
+i9test: ; entry
+ mov bx, offset table1 - 4 ; shared commands
+ call dispatch
+ clc ; not found
+ ret
+i9ts03: mov bx, offset f3flag ; numbers
+ xor b [bx], 1
+ jmp > l1
+i9ts04: mov bx, offset f4flag ; capitals
+ xor b [bx], 1
+ jmp > l1
+i9ts05: mov bx, offset f5flag ; punctuation
+ inc b [bx]
+ cmp b [bx], 3 ; max
+ ja > l2
+ jmp > l1
+i9ts07: mov bx, offset f7flag ; keystroke echo
+ inc b [bx]
+ cmp b [bx], 2 ; max
+ ja > l2
+ jmp > l1
+i9ts08: mov bx, offset f8flag ; screen echo
+ inc b [bx]
+ cmp b [bx], 2 ; max
+ ja > l2
+ jmp > l1
+i9ts09: mov bx, offset f9flag ; speed
+ inc b [bx]
+ cmp b [bx], 3 ; max
+ ja > l2
+ jmp > l1
+i9ts10: mov bx, offset f10flag ; volume
+ inc b [bx]
+ cmp b [bx], 4 ; max+1
+ jb > l1
+l2: mov b [bx], 0 ; reset
+l1: mov ax, bit7 or '0'
+ add al, [bx]
+ jmp save1data
+i9ts28: mov bx, offset i9tsm02
+ mov al, f3flag
+ call sendstatus
+ mov bx, offset i9tsm03
+ mov al, f4flag
+ call sendstatus
+ mov bx, offset i9tsm04
+ mov al, f5flag
+ call sendstatus
+ mov bx, offset i9tsm05
+ mov al, f6flag
+ call sendstatus
+ mov bx, offset i9tsm06
+ mov al, f7flag
+ call sendstatus
+ mov bx, offset i9tsm07
+ mov al, f8flag
+ call sendstatus
+ mov bx, offset i9tsm08
+ mov al, f9flag
+ call sendstatus
+ mov bx, offset i9tsm09
+ mov al, f10flag
+ jmp sendstatus
+i9ts29: mov bx, offset i9tlm1
+ call sendstring
+ mov es, 64
+ es mov al, [23] ; get status
+ push ax
+ and al, bit6 ; caps?
+ call lockstatus
+ mov bx, offset i9tlm2
+ call sendstring
+ pop ax
+ push ax
+ and al, bit5 ; num?
+ call lockstatus
+ mov bx, offset i9tlm3
+ call sendstring
+ pop ax
+ and al, 16 ; scroll?
+ call lockstatus
+ mov bx, offset i9tlm7
+ call sendstring
+ mov al, states0
+ and ax, enhanced
+ call lockstatus
+ mov bx, offset i9pm38
+ test w states1, portopen
+ if z mov bx, offset i9pm37
+ call sendstring
+ mov bx, offset i9pm40
+ test b states2, email1
+ if z mov bx, offset i9pm39
+ call sendstring
+ mov bx, offset i9tsm13
+ mov ax, clipcount
+ call tell5digits
+ mov bx, offset i9tsm10
+ call sendstring
+ es mov al, [73]
+ jmp save3digits ; and return
+i9ts32: mov ax, 4 shl 8 ; check the date
+ int 26
+ mov al, dh ; month
+ test al, bit4 ; convert to binary
+ if nz sub al, 6
+ dec al
+ cbw
+ mov bx, ax
+ mov dh, fdom[bx]
+ test cl, bit1 or bit0 ; leap year?
+ jnz >l1
+ cmp al, 1 ; march or later?
+ if g inc dh
+l1: mov al, cl ; year
+ and al, bit3 or bit2 or bit1 or bit0
+ test cl, bit4
+ if nz add al, 10
+ test cl, bit5
+ if nz add al, 20
+ test cl, bit6
+ if nz add al, 40
+ test cl, bit7
+ if nz add al, 80
+ test ch, bit5
+ if nz add ax, 100
+ sub ax, 80
+ add dh, al
+ dec al
+ shr al, 1
+ shr al, 1
+ add dh, al
+ shl bx, 1
+ mov bx, moylist[bx]
+ mov al, dl ; day
+ test dl, bit5
+ if nz sub al, 12
+ test dl, bit4
+ if nz sub al, 6
+ push ax, bx
+ add al, dh
+l1: sub al, 7
+ cmp al, 7
+ jnl l1
+ shl ax, 1
+ mov bx, ax
+ mov bx, dowlist[bx]
+ call sendstring
+ pop bx, ax
+ call tell3digits
+ push es ; time of day
+ mov es, 64
+ es mov al, [110]
+ xor bx, bx
+ cmp al, 12
+ jb > l1
+ mov bx, offset i9tsm11 ; pm
+ sub al, 12
+l1: push bx
+ test al
+ if z mov al, 12
+ mov bx, offset i9tsm12
+ call tell3digits
+ es mov al, [109]
+ mov bl, 60
+ mul bl
+ xchg al, ah
+ call save3digits
+ pop bx, es
+ jmp sendstring
+i9ts35: call getclip
+ jmp > l3
+i9ts36: mov bx, clipcount
+ test bx
+ jz > l3
+ dec bx
+ cmp b clipboard[bx], cr
+ je > l2
+ cmp b clipboard[bx], spc
+ je > l1
+ inc bx
+ inc w clipcount
+l1: mov b clipboard[bx], cr
+ jmp > l3
+l2: mov w clipcount, 0
+l3: mov bx, offset i9tsm14
+ mov ax, clipcount
+ jmp tell5digits ; and return
+; end of i9test
+;
+rvw01: ; entry
+ test dx; character left
+ jz > l1
+ test dl
+ jnz > l2
+ dec dh
+ mov dl, b i8width
+ mov w i8tone, offset i8rise+2
+l2: dec dl
+ jmp > l2
+rvw02: mov ah, b i8line ; character right
+ mov al, b i8width
+ dec al
+ cmp dx, ax
+ je > l1
+ inc dl
+ cmp dl, b i8width
+ jl > l2
+ inc dh
+ xor dl, dl
+ mov w i8tone, offset i8fall
+l2: and w states1, not (joined or ph1flag or ph2flag)
+ mov revcursor, dx ; remember this
+ call regmul
+ call save2data
+ stc ; found
+ ret
+rvw03: test dh ; up if not 0
+ jz > l1
+ dec dh
+ jmp short rvw05
+rvw04: cmp dh, b i8line
+ je > l1
+ inc dh ; down
+rvw05: mov w revcursor, dx ; remember this
+ and w states1, not joined
+rvw06: call get1line
+l1: stc ; found
+ ret
+rvw07: mov ax, dx
+ call tellcursor
+ stc ; found
+ ret
+rvw08: call regmul
+ or w states1, ph1flag
+ call save2data
+ stc ; found
+ ret
+rvw09: test dl ; word left
+ jnz > l1
+ mov dl, b i8width
+ test dh
+ jz rvw10
+ dec dh
+ mov w i8tone, offset i8rise+2
+l1: dec dl
+ call regmul
+ cmp al, 33
+ jl rvw09
+l1: mov si, dx ; save without push
+ test dl
+ jz rvw10
+ dec dl
+ call regmul
+ cmp al, spc
+ jg l1
+ mov dx, si
+rvw10: mov w revcursor, dx
+ call get1word
+ and w states1, not joined
+ stc ; found
+ ret
+rvw11: call regmul
+ cmp al, 33
+ jl > l1
+ inc dl
+ cmp dl, cl
+ jb rvw11
+ cmp dh, b i8line
+ je > l2
+ xor dl, dl
+ inc dh
+l1: call regmul
+ cmp al, spc
+ jg rvw10
+ inc dl
+ cmp dl, cl
+ jb l1
+ cmp dh, b i8line
+ je > l2
+ xor dl, dl
+ inc dh
+ mov w i8tone, offset i8fall
+ jmp l1
+rvw12: mov ax, dx
+ call tellcursor
+ mov bx, offset i9tsm01
+ call sendstring
+ call get1char
+l2: stc ; found
+ ret
+rvw13: test dl ; home
+ jz l2
+ xor dl, dl
+ mov w i8tone, offset i8mid
+ jmp short rvw10
+rvw14: test dh ; page up
+ jz l2
+ xor dh, dh
+ mov w i8tone, offset i8rise+2
+ jmp short rvw05
+rvw15: mov al, b i8width ; end
+ dec al
+ cmp dl, al
+ je l2
+ mov dl, al
+ mov w i8tone, offset i8mid
+ jmp short rvw10
+rvw16: mov ah, b i8line ; page down
+ cmp dh, ah
+ je l2
+ mov dh, ah
+ mov w i8tone, offset i8fall
+ jmp short rvw05 ; end of review
+;
+fixname: ; entry
+ test ax
+ jnz > l1
+ mov w namesize, ax
+ mov di, offset tempname
+ mov cx, 15
+ mov es, ds
+ cld
+ rep stosb
+ mov bx, offset fxnmm1
+ call sendstring
+ mov bx, offset bankname
+ call sendstring
+ mov bx, offset fxnmm2
+ call sendstring
+ clc ; continue
+ ret
+l1: xor ah, ah ; trailing zero
+ mov bx, namesize
+ cmp al, bsp
+ je > l1
+ cmp al, spc ; done?
+ jb > l2
+ ja > l3
+ test bx
+ jz > l4
+l3: call toupper
+ mov w tempname[bx], ax
+ push bx
+ call save2data
+ pop bx
+ cmp bx, 14
+ jnb > l2
+ inc w namesize
+ clc
+ ret
+l1: test bx
+ jz > l5
+ dec bx
+ dec w namesize
+ mov ax, tempname[bx]
+ push bx
+ call save2data
+ pop bx
+ xor ax, ax
+ mov w tempname[bx], ax
+l5: clc
+ ret
+l2: mov si, offset tempname
+ mov di, offset bankname
+ mov cx, 15
+ mov es, ds
+ cld
+ rep movsb
+l4: stc
+ ret
+fxnmm1 db 'current name', ro, 0
+fxnmm2 db ro, 'new name', ro, 'press space if okay', 0
+namesize dw 0
+tempname db 15 dup (0)
+; end of fixname
+insert: ; entry
+ cmp ax, 28 shl 8 + cr ; cr?
+ je > l1
+ cmp ax, 224 shl 8 + cr ; cr?
+ je > l1
+ cmp ah, 82 ; insert?
+ je > l1
+ mov bl, scansize
+ xor bh, bh
+ cmp bl, 8 ; max size 9
+ jg > l1
+ cmp ax, 14 shl bsp + 8 ; backspace?
+ je > l2
+ mov b scanterm[bx], al
+ inc bl
+ jmp > l3
+l2: test bl
+ jz ret
+ dec bl
+ mov al, scanterm[bx]
+l3: mov b scansize, bl
+ jmp save2data
+l1: mov w i9state, offset i9direct
+ and b states0, not buzzer
+ test b states0, enhanced
+ if z mov w i9state, offset i9st2
+ mov bx, offset i9pm07
+ jmp sendstring
+; end of insert
+search: ; entry
+ cmp b scansize, 0
+ jne > l1
+ mov b scanfind, 0
+ mov bx, offset srchm2
+ clc ; no scan target
+ ret
+l1: mov b scanflag, ah ; save direction
+ mov al, scansize
+ cbw
+ mov cx, ax
+ mov al, b i8width
+ sub al, cl
+ inc al
+ cmp b scanfind, 0
+ jne > l2
+l1: push ax, cx, dx
+ call scantest
+ pop dx, cx, ax
+ jc > l3 ; if found
+l2: mov b scanfind, 0
+ cmp b scanflag, 117 ; test direction
+ jne > l2 ; if backward
+ inc dl
+ cmp dl, al
+ jl l1
+ cmp dh, b i8line
+ je > l4
+ xor dl, dl
+ inc dh
+ jmp l1
+l2: test dl
+ jnz > l2
+ mov dl, al
+ test dh
+ jz > l4 ; if done
+ dec dh
+l2: dec dl
+ jmp l1
+l4: mov bx, offset i8msg1
+ clc ; not found
+ ret
+l3: mov w revcursor, dx ; reset cursor
+ and w states1, not joined
+ mov b scanfind, 1
+ mov ax, dx
+ call tellcursor
+ call get1word
+ stc ; found
+ ret
+srchm2 db 'no target to scan', 0
+; end of search
+scanatt: ; entry
+ mov b scanflag, ah
+ call regmul
+ mov b digit, ah
+l1: cmp b scanflag, 118 ; test direction
+ jne > l2 ; if backward
+ inc dl
+ cmp dl, b i8width
+ jl > l3
+ cmp dh, b i8line
+ je > l4
+ mov dl, 0
+ inc dh
+ jmp > l3
+l2: test dl
+ jnz > l2
+ mov dl, b i8width
+ test dh
+ jz > l4 ; if done
+ dec dh
+l2: dec dl
+l3: call regmul
+ cmp b digit, ah
+ je l1
+ and w states1, not joined
+ mov w revcursor, dx ; reset cursor
+ mov ax, dx
+ call tellcursor
+ mov bx, offset i9tsm01
+ call sendstring
+ call get1char
+ stc ; found
+ ret
+l4: mov bx, offset i8msg1
+ clc ; not found
+ ret
+; end of scanatt
+defaults: ; entry
+ mov es, ds
+ xor ax, ax
+ mov di, offset bankname
+ mov cx, banksize shr 1 ; words
+ cld
+ rep stosw
+ mov w f3flag, f4def shl 8 + f3def
+ mov w f5flag, f6def shl 8 + f5def
+ mov w f7flag, f8def shl 8 + f7def
+ mov w f19flag, f20def shl 8 + f19def
+ mov bx, ax
+ mov cx, 10
+ mov dh, b i8line
+ inc dh
+ mov dl, b i8width
+l1: mov w banktable[bx+2], 1 shl 8 + 1
+ mov w banktable[bx+4], dx
+ add bx, 6
+ loop l1
+ call set1alert
+set1ignore: ; entry
+ mov es, cs
+ mov di, offset deadsub
+ mov al, banksub[2]
+ call getsmart
+ mov al, banksub[3]
+ jmp getsmart
+; end of set1ignore
+; end of defaults
+set1digit: ; entry
+ mov w [bx],'0+' ; back-words order
+ cmp al, 9
+ ja > l1
+ add b [bx+1], al
+ ret
+l1: cmp al, 247
+ jb ret
+ mov b [bx],'-'
+l1: inc b [bx+1]
+ inc al
+ test al
+ jnz l1
+ ret
+; end of set1digit
+set3digits: ; entry
+ mov w [bx],'00'
+ push ax, cx
+ xor ah, ah
+ cmp ax, 10 ; one digit?
+ jl > l1 ; if yes
+ cmp ax, 100 ; two digits?
+ jl > l2 ; if yes
+ mov cl, '0'
+l3: sub ax, 100
+ inc cl
+ cmp ax, 100
+ jge l3
+ mov b [bx], cl
+l2: mov cl, '0'
+l3: cmp ax, 10
+ jl > l2
+ sub ax, 10
+ inc cl
+ jmp l3
+l2: mov b [bx+1], cl
+l1: add al, '0'
+ mov b [bx+2], al
+ pop cx, ax
+ ret
+; end of set3digits
+get1crc: ; entry
+; bx = address of masks, es = video segment
+ call fix4regs ; sets cx and dx
+ xor di, di ; initialize crc
+ push bx
+ mov bx, [bx] ; masks
+l1: push dx ; top left
+ mov si, w i8vidoff
+ xor ax, ax
+ xchg al, dh
+ push dx ; left
+ shl ax, 1
+ shl dx, 1
+ add si, dx
+ mov dx, cx
+ mov cl, b i8width
+ mul cl
+ add si, ax
+ xor ch, ch
+ cmp cl, dl
+ if g mov cl, dl
+ pop ax
+ sub cx, ax
+l2: es mov ax, [si]
+ and ah, bl
+ cmp ah, bh
+ jne > l3
+ xor di, ax
+ rol di, 1
+l3: inc si
+ inc si
+ loop l2 ; another char
+ mov cx, dx
+ pop dx
+ inc dh
+ cmp dh, ch
+ jl l1 ; another line
+ pop bx
+ ret
+; end of get1crc
+;
+getclip: ; entry
+ mov al, spc ; line separator
+ call save4data
+ mov al, b i8width
+ mov dx, w revcursor
+l1: push ax ; save line length
+ call regmul
+ call save4data
+ pop ax
+ jc > l2 ; if overflow
+ inc dl
+ cmp dl, al
+ jl l1
+ ret
+l2: mov w i8tone, offset i8warble ; overflow alarm
+ ret
+; end of getclip
+;
+save4data: ; entry
+ mov bx, w clipcount
+ cmp bx, clipsize
+ jl > l1
+ stc ; overflow
+ ret
+l1: cmp al, cr
+ je > l1
+ cmp al, spc
+ jl > l2
+ test al, bit7
+ jz > l1
+l2: mov al, spc
+l1: test bx
+ jnz > l1
+ cmp al, spc ; leading space
+ je > l2
+l1: cmp al, spc ; no consecutive spaces
+ jne > l1
+ dec bx
+ cmp b clipboard[bx], al
+ je > l2
+ cmp b clipboard[bx], cr
+ je > l2
+ inc bx
+l1: mov b clipboard[bx], al
+ inc w clipcount
+l2: clc ; successful
+ ret
+; end of save4data
+tellsubs: ; entry
+ mov bx, offset htm13
+ call sendstring
+ mov ax, w tempsub+2
+ dec ah
+ dec al
+ call tellcursor
+ mov bx, offset htm17
+ call sendstring
+ mov ax, w tempsub+4
+ dec ah
+ dec al
+tellcursor: ; entry
+ push ax
+ mov bx, offset i8msg10
+ call sendstring
+ pop ax
+ push ax
+ inc ax
+ call save3digits
+ mov bx, offset i8msg9
+ call sendstring
+ pop ax
+ mov al, ah
+ inc ax
+ jmp save3digits
+; end of tellcursor
+; end of tellsubs
+tellfilter: ; entry
+ mov bx, offset tlfm1
+ mov ax, w tempsub
+ test ax
+ jz > l1
+cmp al, 64 or 32 or 16 or 8 or 4 or 2 or 1
+ je > l2
+cmp al, 64 or 32 or 16 or 4 or 2 or 1
+ je > l2
+cmp al, 64 or 32 or 16 or 8
+ je > l2
+cmp al, 64 or 32 or 16
+ je > l2
+cmp al, 8 or 4 or 2 or 1
+ je > l2
+cmp al, 4 or 2 or 1
+ je > l2
+cmp al, 8
+ je > l2
+ push ax
+ mov bx, offset tlfm2
+ call tell3digits
+ pop ax
+ xchg ah, al
+ mov bx, offset tlfm3
+ jmp tell3digits
+l2: xchg ah, al
+ push ax
+ shr ax, 1
+ shr ax, 1
+ shr ax, 1
+ shr ax, 1
+ and ah, 4 or 2 or 1
+ cmp ah, 4 or 2 or 1
+ jne > l2
+ mov bx, offset tlfm4
+ and al, 4 or 2 or 1
+ call tell3digits
+l2: pop ax
+ push ax
+ and ah, 4 or 2 or 1
+ cmp ah, 4 or 2 or 1
+ jne > l2
+ mov bx, offset tlfm5
+ and al, 4 or 2 or 1
+ call tell3digits
+l2: pop ax
+ and ah, 8
+ jz ret
+ mov bx, offset tlfm6
+ and al, 8
+ if z mov bx, offset tlfm7
+l1: jmp sendstring
+; end of tellfilter
+get1char: ; entry
+ call regmul
+ call save2data
+ mov al, ah
+ push ax
+ mov bx, offset tlfm4
+ call sendstring
+ pop ax
+ push ax
+ and ax, 7 shl 4
+ shr ax, 1
+ shr ax, 1
+ shr ax, 1
+ mov bx, ax
+ mov bx, get1color[bx]
+ call sendstring
+ mov bx, offset tlfm5
+ call sendstring
+ pop ax
+ test al, bit7 ; blinking?
+ jz > l1 ; if not
+ push ax
+ mov bx, offset get1cm3
+ call sendstring
+ pop ax
+l1: and ax, 15
+ shl ax, 1 ; times 2
+ mov bx, ax
+ mov bx, get1color[bx]
+ call sendstring
+ ret
+get1color dw get1cm5,get1cm6,get1cm7,get1cm8
+ dw get1cm9,get1cm10,get1cm11,get1cm12
+ dw get1cm13,get1cm14,get1cm15,get1cm16
+ dw get1cm17,get1cm18,get1cm19,get1cm20
+; end of get1char
+test1line: ; entry
+ mov al, b i8width
+ xor dl, dl
+l1: push ax ; save line length
+ call regmul
+ cmp al, spc ; ignore ctrl chars
+ jna > l2 ; if not
+ cmp al, ro
+ jb > l3 ; found non blank
+l2: pop ax
+ inc dl
+ cmp dl, al
+ jl l1
+ stc ; blank line
+ ret
+l3: pop ax
+ clc ; has non blanks
+ ret
+; end of test1line
+tell5digits: ; entry
+ push ax
+ call sendstring
+ pop ax
+save5digits: ; entry
+ mov w digits[0], spc shl 8 or spc
+ mov w digits[2], spc shl 8 or spc
+ mov w digits[4], '0'
+ push ax, bx
+ mov bl, '0'
+ cmp ax, 10 ; one digit?
+ jb > l1 ; if yes
+ cmp ax, 100 ; two digits?
+ jb > l2 ; if yes
+ cmp ax, 1000 ; three digits?
+ jb > l3 ; if yes
+ cmp ax, 10000 ; four digits?
+ jb > l4 ; if yes
+l5: inc bl
+ sub ax, 10000
+ cmp ax, 10000
+ jnb l5
+ mov b digits[0], bl
+ mov bl, '0'
+ cmp ax, 1000
+ jb > l5
+l4: inc bl
+ sub ax, 1000
+ cmp ax, 1000
+ jnb l4
+l5: mov b digits[1], bl
+ mov bl, '0'
+ cmp ax, 100
+ jb > l4
+l3: inc bl
+ sub ax, 100
+ cmp ax, 100
+ jnb l3
+l4: mov b digits[2], bl
+ mov bl, '0'
+ cmp ax, 10
+ jb > l3
+l2: inc bl
+ sub ax, 10
+ cmp ax, 10
+ jnb l2
+l3: mov b digits[3], bl
+l1: add b digits[4], al
+ mov bx, offset digits
+ call sendstring
+ pop bx, ax
+ ret
+; end of save5digits
+; end of tell5digits
+; end of 5others.a
+
+

@@ -1,0 +1,6 @@
+Hello. This is the Klatt synthesizer speaking on Free DOS.
+The quick brown fox jumps over the lazy dog.
+Please open the file and read the first line.
+Good morning. Today is Saturday, the nineteenth of September.
+The screen reader is loading. Press escape to stop.
+One two three four five six seven eight nine ten.

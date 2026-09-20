@@ -1,0 +1,21 @@
+name: build
+on: [push, pull_request]
+jobs:
+  exes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: toolchains
+        run: TOOLS=$HOME/tools bash run/get-toolchains.sh
+      - name: build the DOS programs
+        run: |
+          export TOOLS=$HOME/tools WATCOM=$HOME/tools/ow DJ=$HOME/tools/djgpp/bin
+          make -C src/sbtalk SBTALK.EXE SBTALK3.EXE SBTALKXT.EXE SAY.EXE
+          make -C src/espeak ESPK.EXE ESPKD.EXE
+          make -C src/klatt check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dos-programs
+          path: |
+            src/sbtalk/*.EXE
+            src/espeak/*.EXE

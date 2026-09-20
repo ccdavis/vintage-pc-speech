@@ -1,0 +1,107 @@
+Installed 23 packages in 127ms
+espk_8k_g6                               WER  29.5%  (71/241)
+      [ 3/10] Hello, this is the classic synthesizer speaking on 3DOS.
+      [ 6/ 9] but with round parts done over the lazy dot.
+      [ 1/ 9] Please open the aisle and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the 19th of September.
+      [ 1/ 9] The screen reader is loaded. Press escape to stop.
+      [ 1/10] 1, 2, 3, 4, 9, 6, 7, 8, 9, 10.
+      [ 4/11] and let's ask the next corner and wait for the person.
+      [ 2/10] My phone battery is almost empty. Can you target?
+      [ 0/11] The meeting starts at half past two in the small room.
+      [ 8/10] She was red, we'll come back half a corner shot.
+      [ 1/ 9] This will rain this afternoon, so take your umbrella.
+      [10/10] 05927-31846
+      [ 3/10] The children are laying in the dot and behind the house.
+      [ 3/12] or the red will come the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 1/10] The train to London leads from platform 7 at noon.
+      [ 3/ 9] close the door quietly, so baby is sleeping on stairs.
+      [ 3/12] We watched a long movie and then worked so in the night.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 3/10] Please go over doctor and ask about the best results.
+      [10/10] 4815937206
+      [ 2/11] This new car is start blue with a large silver stripe.
+      [ 3/10] But whenever forecast says it will be Sunday this weekend.
+      [ 2/10] 25 people came to the party on Friday night.
+espk_8k_g0                               WER  26.6%  (64/241)
+      [ 3/10] Hello, this is the classic synthesizer speaking on 3DOS.
+      [ 6/ 9] with round parts done over the lazy dot.
+      [ 1/ 9] Please open the aisle and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the 19th of September.
+      [ 0/ 9] The screen reader is loading, press escape to stop.
+      [ 1/10] 1, 2, 3, 4, 9, 6, 7, 8, 9, 10.
+      [ 7/11] to the left half of an extra corner and wait for the person.
+      [ 2/10] My phone battery is almost empty. Can you target?
+      [ 0/11] The meeting starts at half past two in the small room.
+      [ 9/10] She was red. We'll come back first on the show.
+      [ 1/ 9] This will rain this afternoon, so take your umbrella.
+      [ 0/10] zero five nine two seven three one eight four six
+      [ 3/10] The children are laying in the dot and behind the house.
+      [ 5/12] or if the red will cover top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 1/10] The train to London leads from platform 7 at noon.
+      [ 3/ 9] close the door quietly, so baby is sleeping on stairs.
+      [ 3/12] We watched a long movie and then watched Zone in the Night.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 4/10] Please go over Doctor and ask her about the best results.
+      [ 0/10] 4 8 1 5 9 3 7 2 0 6
+      [ 7/11] This new car is start blue with a lot of chill first drive.
+      [ 6/10] But whenever forecast passes, we'll be Sunday this weekend.
+      [ 1/10] Twenty-nine people came to the party on Friday night.
+espk_11k                                 WER  23.7%  (57/241)
+      [ 7/10] Hello, this is the classic, the size of speaking of 3DOS.
+      [ 2/ 9] The quick route box jumps over the lazy dog.
+      [ 0/ 9] Please open the file and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the 19th of September.
+      [ 1/ 9] The screen reader is loaded. Press escape to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 2/11] to the left at the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty. Can you charge it?
+      [ 0/11] The meeting starts at half past two in the small room.
+      [ 6/10] She was red and will contact us at the corner shop.
+      [ 0/ 9] It will rain this afternoon, so take your umbrella.
+      [10/10] 05927-31846
+      [ 3/10] The children are laid in the dot and behind the house.
+      [ 4/12] Pull to the red walk of the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 1/10] The train to London leads from platform 7 at noon.
+      [ 0/ 9] Close the door quietly, the baby is sleeping upstairs.
+      [ 2/12] We watched a long movie and then walked over the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 1/10] Please call the doctor and ask about the best results.
+      [10/10] 4815937206
+      [ 2/11] This new car is not blue with a large silver stripe.
+      [ 3/10] But when the forecast says it will be sunny this weekend...
+      [ 2/10] 25 people came to the party on Friday night.
+espeak_ref_8k                            WER  30.7%  (74/241)
+      [ 5/10] Hello, this is Maclax, and I'm speaking on 3DOS.
+      [ 4/ 9] Thirdly, the crowd pause jumps over the lazy dog.
+      [ 1/ 9] Please open the aisle and read the first line.
+      [ 3/ 9] Good morning, today and Saturday in the 19th of September.
+      [ 4/ 9] The stream reader is loading, the SSK has to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 2/11] turn left eye to the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty. Can you charge it?
+      [ 0/11] The meeting starts at half past two in the small room.
+      [ 5/10] She bought bread and will come back on the corner shop.
+      [ 5/ 9] We'll rate this after move, so take your umbrella.
+      [ 0/10] 0 5 9 2 7 3 1 8 4 6
+      [ 1/10] The children are laying in the garden behind the house.
+      [ 6/12] and the rent will come from the old shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 9/10] The train goes under Lee's proper life or pepper and moon.
+      [ 6/ 9] close the door quietly, so maybe it's leaving us here.
+      [ 3/12] We watched a long movie, and then watched over the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 2/10] Please call the doctor and ask her about the death results.
+      [10/10] 481-937-20
+      [ 1/11] his new car in dark blue with a large silver stripe.
+      [ 5/10] but when the forecast and it will be funded this weekend.
+      [ 2/10] 29 people came to the party on Friday night.
+
+SUMMARY (base.en stable)
+  espk_8k_g6                                29.5%
+  espk_8k_g0                                26.6%
+  espk_11k                                  23.7%
+  espeak_ref_8k                             30.7%

@@ -1,0 +1,392 @@
+; provox 7.x -- 6i16code.a
+; data and code for i16 -- video
+ax_save dw ? ; caller data
+bx_save dw ? ; caller data
+i16last dw 0 ; ah/al of last wac/wco/wtt
+i16entry: push ds ; use the caller stack
+ mov ds, cs
+ test b states0, ansi2flag
+ jz > l1
+ test b states0, ansi1flag
+ jz > l2
+ and b states0, not ansi1flag
+ jmp > l3
+l2: cmp w ax_save, ax
+ if e and b states0, not ansi2flag
+ jmp > l2
+l1: cmp ah, 9
+ je > l1
+ cmp ah, 10
+ je > l1
+ cmp ah, 14
+ je > l1
+ cmp w ax_save, 2 shl 8 or cr
+ jne > l3
+ cmp ax, i8mode; ah=8, al=mode?
+ jne > l3
+ or b states0, ansi1flag or ansi2flag
+l3: mov w ax_save, ax
+l2: pop ds
+i16return db 234 ; far jump
+ dd ? ; original i6 vector
+l1: mov w ax_save, ax
+ mov w bx_save, bx
+ cmp w voxnumber, maxvoxnum shl 1 ; initialized?
+ je > l1
+ test w states1, closed
+ if z or b states0, watchdog
+l1: push bx, cx, dx, es
+ mov es, 64
+ mov bx, i16last ; last ah/al
+ cmp ax, bx ; same char, same service?
+ je > l1 ; if so
+ cmp al, bl ; same char, different service?
+ je > l2 ; if so
+ mov w i16last, ax ; save new char and service
+l1: test al, bit7 ; funny char?
+ jnz > l2 ; if so
+ cmp w last1in, 0 ; from system?
+ je > l1 ; if so
+ cmp al, bsp ; backspace?
+ jne > l4 ; if not
+ xor w states1, i16flip ; toggle
+l2: jmp > l2
+l4: test w states1, i16flip ; switch on?
+ jnz > l2 ; ignore if so
+l1: push ax ; find cursor
+ mov bx, 80
+ es mov al, [98] ; page
+ cbw
+ shl ax, 1
+ add bx, ax
+ es mov bx, [bx]
+ mov dx, w oldcursor
+ mov w oldcursor, bx
+ pop ax
+ cmp b later,';' ; waiting for cursor to move?
+ jne > l1 ; if not
+ cmp dx, bx ; same position?
+ je > l2 ; if so
+l1: cmp dl, bl ; retro movement?
+ ja > l1 ; if not
+ cmp dh, bh ; same line?
+ je > l4 ; if so
+l1: or b states3, endofline
+l4: cmp b f6flag, 1 ; dead zone?
+ jne > l1
+ call deadzone
+ jc > l2
+l1: call test1char
+ jc > l2
+ mov bh, bx_save[1]
+ es cmp [98], bh ; same page?
+ jne > l1 ; if not
+ test b states3, endofline
+ jz > l1 ; if not
+ and b states3, not endofline
+ push ax
+ mov ax, bit7 or cr ; end of line
+ call save1data
+ pop ax
+l1: call save1data
+l2: pop es, dx, cx, bx
+ mov ax, ax_save
+ jmp l3 ; end of code for i16
+test1char: ; entry
+ mov ah, al ; keep al, test ah
+ cmp ah, spc
+ je > l1 ; if yes
+ cmp ah, cr
+ if e mov al, 31 ; use rs for cr
+ cmp b last1in, tab ; char after tab?
+ je > l2 ; if so
+ cmp w last1in, 0 ; from system?
+ je > l3 ; if yes
+ cmp ah, last1in ; from keyboard?
+ je > l4 ; if so
+ cmp b last1in,'^' ; control char?
+ je > l4 ; if so
+ mov b last1in, ah
+ cmp ah, '^' ; ctrl char?
+ je > l5 ; if so
+ jmp > l2 ; must be from system
+l1: cmp b last1in, spc ; after space?
+ je > l4 ; if so
+ cmp b last1in, tab ; after tab?
+ je > l5 ; if so
+ mov w last1in, 0 ; from system
+ jmp > l3
+l4: mov w last1in, 0 ; drop char
+l5: stc ; drop char
+ ret
+l2: mov w last1in, 0 ; drop char
+l3: cmp b f8flag, 0 ; keep screen char?
+ je l5 ; if not
+ cmp b f5flag, 3 ; max detail?
+ je > l1 ; if so
+ cmp al, spc ; ctrl char?
+ jb l5 ; if so
+l1: clc ; keep char
+ ret
+; end of test1char
+save2data: ; entry
+ push ax
+ cmp al, bsp
+ je > l1 ; if so
+ mov bx, offset save2dm1
+ cmp al, tab
+ je > l2 ; if so
+ mov bx, offset save2dm2
+ cmp al, escp
+ je > l2 ; if so
+ test al ; arrows?
+ jnz > l3 ; if not
+ cmp ah, 3 ; control @?
+ je > l3 ; if so
+ mov bx, offset save2dm3
+ cmp ah, 15 ; tab left?
+ je > l2 ; if so
+ mov bx, offset save2dm4
+ cmp ah, 71 ; home?
+ je > l2 ; if so
+ mov bx, offset save2dm5
+ cmp ah, 73 ; page up?
+ je > l2 ; if so
+ mov bx, offset save2dm6
+ cmp ah, 79 ; end?
+ je > l2 ; if so
+ mov bx, offset save2dm7
+ cmp ah, 81 ; page down?
+ je > l2 ; if so
+ mov bx, offset save2dm8
+ cmp ah, 82 ; insert?
+ je > l2 ; if so
+ mov bx, offset save2dm9
+ cmp ah, 83 ; delete?
+ jne > l1 ; if not
+l2: call sendstring
+ jmp > l1
+l3: call tell1char
+l1: pop ax
+ ret
+; end of save2data
+analyze: ; entry
+ push ax, bx, cx, dx, es
+ mov es, ds
+ mov si, offset boxes_this
+ mov di, offset boxes_last
+ mov cx, nlz1length shr 1 ; number of words to copy
+ cld
+ rep movsw ; move new data to old
+ mov di, offset boxes_this
+ mov cx, nlz1length shr 1 ; number of words to clear
+ xor ax, ax
+ cld
+ rep stosw ; set boxes to 0
+ mov di, offset corners
+ mov cx, nlz2length shr 1 ; number of words to clear
+ cld
+ rep stosw ; set corners sums and crcs to 0
+ mov al, b i8line ; compute screen size
+ inc al
+ mov bl, b i8width
+ mul bl
+ mov cx, ax ; screen size
+ mov si, w i8vidoff
+ xor di, di ; full screen crc
+ pop ds ; reverse segment regs
+ cld
+l1: lodsw ; ah=attribute code, al=character code
+ xor di, ax ; compute crc
+ rol di, 1
+ test al, bit7 ; upper ascii?
+ if nz call setcorners
+ mov dx, ax
+ mov al, ah
+ and ax, 15 ; keep bits 3, 2, 1, 0
+ shl ax, 1
+ mov bx, ax
+ es inc w fg_sum[bx]
+  es mov ax, fg_crc[bx]
+ xor ax, dx
+ rol ax, 1
+ es mov fg_crc[bx], ax
+ mov al, dh
+ and ax, 7 shl 4 ; keep bits 5, 6, 7
+ shr ax, 1
+ shr ax, 1
+ shr ax, 1
+ mov bx, ax
+ es inc w bg_sum[bx]
+  es mov ax, bg_crc[bx]
+ xor ax, dx
+ rol ax, 1
+ es mov bg_crc[bx], ax
+ loop l1
+ push ds, es ; restore regs
+ pop ds, es
+ mov w crc_this, di ; save crc
+ mov cx, 4 ; get four best bg screens
+l1: push cx
+ mov cx, 8 ; scan bg screens
+ xor ax, ax
+ xor bx, bx
+l2: cmp w bg_sum[bx], ax
+ jna > l3
+ mov ax, bg_sum[bx]
+ mov dx, bx
+l3: inc bx
+ inc bx
+ loop l2
+ pop cx
+ test ax
+ jz > l2
+ mov bx, dx
+ mov w bg_sum[bx], 0
+ mov si, ax ; sum
+ mov di, bg_crc[bx]
+ mov ax, 4
+ sub ax, cx ; cx=4 ax=0, cx=3 ax=1, cx=2 ax=2, cx=1 ax=3
+ call times6 ; bx = 6*ax
+ mov w bg_this[bx+4], di ; crc
+ mov w bg_this[bx+2], si ; sum
+ mov dh, 7 shl 1
+ shl dx, 1
+ shl dx, 1
+ shl dx, 1
+ xchg dh, dl
+ mov w bg_this[bx+0], dx ; masks
+l2: loop l1
+ mov cx, 4 ; get four best fg screens
+l1: push cx
+ mov cx, 16 ; scan fg screens
+ xor ax, ax
+ xor bx, bx
+l2: cmp w fg_sum[bx], ax
+ jna > l3
+ mov ax, fg_sum[bx]
+ mov dx, bx
+l3: inc bx
+ inc bx
+ loop l2
+ pop cx
+ test ax
+ jz > l2
+ mov bx, dx
+ mov w fg_sum[bx], 0
+ mov si, ax ; sum
+ mov di, fg_crc[bx]
+ mov ax, 4
+ sub ax, cx ; cx=4 ax=0, cx=3 ax=1, cx=2 ax=2, cx=1 ax=3
+ call times6
+ mov w fg_this[bx+4], di ; crc
+ mov w fg_this[bx+2], si ; sum
+ shr dx, 1
+ mov dh, 15
+ xchg dh, dl
+ mov w fg_this[bx+0], dx ; masks
+l2: loop l1
+ xor bx, bx ; index for corners
+ xor di, di ; index for boxes
+l1: mov ax, corners[bx+3] ; ah=y1 al=x1
+ mov si, bx ; save without pushing
+ test b corners[bx+2], 1 ; upper left?
+ jz > l2 ; if not
+l3: inc bx
+ inc bx
+ inc bx
+ mov cx, corners[bx+3] ; ch=y2 cl=x2
+ test b corners[bx+2], 2 ; upper right?
+ jz > l4 ; if not
+ cmp ah, ch ; y1=y2?
+ je > l5 ; if yes
+l4: test cx ; done early?
+ jz > l2 ; if yes
+ cmp bx, 96-9 ; minimum for 3/4 box
+ jna l3
+ jmp > l2
+l5: mov dl, cl ; save x2
+l3: inc bx
+ inc bx
+ inc bx
+ mov cx, corners[bx+3] ; ch=y2 cl=x2
+ test b corners[bx+2], 4 ; lower left?
+ jz > l4 ; if not
+ cmp al, cl ; x1=x2?
+ je > l5 ; if yes
+l4: test cx ; done early?
+ jz > l2 ; if yes
+ cmp bx, 96-6 ; minimum for 2/4 box
+ jna l3
+ jmp > l2
+l5: mov dh, ch ; save y2
+l5: inc bx
+ inc bx
+ inc bx
+ mov cx, corners[bx+3] ; ch=y2 cl=x2
+ test b corners[bx+2], 8 ; lower right?
+ jz > l3 ; if not
+ cmp cx, dx ; last corner?
+ je > l4 ; if yes
+l3: test cx ; done early?
+ jz > l2
+ cmp bx, 96-3 ; minimum for 1/4 box
+ jna l5
+ jmp > l2
+l4: xchg bx, di ; box index in bx
+ mov w boxes_this[bx+0], ax ; save x1y1
+ mov w boxes_this[bx+2], cx ; save x2y2
+ xchg bx, di ; corner index in bx
+ inc di
+ inc di
+ inc di
+ inc di
+l2: test ax ; done early?
+ jz > l2 ; if yes
+ mov bx, si ; restore without popping
+ inc bx
+ inc bx
+ inc bx
+ cmp bx, 96-12 ; minimum for whole box
+ ja > l2
+ jmp l1
+l2: pop dx, cx, bx, ax
+ ret
+; end of analyze
+getnumber: ; entry
+ xor ax, ax
+ xor dx, dx
+ cmp b [bx],'+'
+ je > l1
+ cmp b [bx],'-'
+ jne > l2
+ inc dx
+l1: inc bx
+l2: push dx
+ call getdigit
+ pop dx
+ test dx
+ jz ret
+ mov dx, ax
+ xor ax, ax
+ sub ax, dx
+ ret
+; end of getnumber
+getdigit: ; recursive
+ cmp b [bx],'0'
+ jl ret
+ cmp b [bx],'9'+1
+ jnl ret
+ mov cl, 10
+ mul cl
+ mov cx, ax
+ mov al, [bx]
+ and ax, 15
+ add ax, cx
+ inc bx
+ call getdigit
+ ret
+; end of getdigit
+; end of 6i16code.a
+
+

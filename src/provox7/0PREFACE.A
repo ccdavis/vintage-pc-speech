@@ -1,0 +1,735 @@
+; provox 7.x -- 0preface.a
+;
+; build provox.exe with these tools:
+; A86 macro assembler, V3.22 Copyright 1990 Eric Isaacson
+; Turbo Link Version 7.00 Copyright (c) 1987, 1994 Borland International
+;
+; Required source files are:
+; 0PREFACE.A 1I5CODE.A 2I8CODE.A 3I9CODE.A 4I9JUMPS.A
+; 5OTHERS.A 6I16CODE.A 7I22CODE.A 8I47CODE.A 9PROVOX7.A
+;
+; At a DOS prompt type these commands:
+; a86 +os *.a
+; tlink -k provox7
+;
+revision equ '5' shl 8 or '0' ; change first value first
+; defaults
+f3def equ 0 ; say numbers
+f4def equ 0 ; say cap
+f5def equ 2 ; punctuation
+f6def equ 0 ; smart screen
+f7def equ 1 ; keyboard echo
+f8def equ 1 ; screen echo
+f9def equ 2 ; speed
+f10def equ 3 ; volume
+f19def equ 80 ; warning bell column
+f20def equ 1 ; watchdog threshold
+; internal constants
+sysnumber equ 241 ; for multiplex identification
+dec_sysnumber equ 208
+stacksize equ 256 ; bytes
+maxlines equ 60
+maxvoxnum equ 10
+shelfsize equ 80
+clipsize equ 512
+bufsize equ maxlines*82 ; 80 bytes + cr + lf per line
+bit0 equ 1 shl 0
+bit1 equ 1 shl 1
+bit2 equ 1 shl 2
+bit3 equ 1 shl 3
+bit4 equ 1 shl 4
+bit5 equ 1 shl 5
+bit6 equ 1 shl 6
+bit7 equ 1 shl 7
+bit8 equ 1 shl 8
+bit9 equ 1 shl 9
+bit10 equ 1 shl 10
+bit11 equ 1 shl 11
+bit12 equ 1 shl 12
+bit13 equ 1 shl 13
+bit14 equ 1 shl 14
+bit15 equ 1 shl 15
+; equates for states0
+enhanced equ bit0
+tsr_type equ bit1
+buzzer equ bit2
+watchdog equ bit3
+routing equ bit4
+output_busy equ bit5
+ansi1flag equ bit6
+ansi2flag equ bit7
+; equates for states1
+holding equ bit0
+joined equ bit1
+closed equ bit2
+i8busy equ bit3
+i9busy equ bit4
+dec_ready equ bit5
+graphics equ bit6
+continuous equ bit7
+passthru equ bit8
+ph1flag equ bit9
+ph2flag equ bit10
+digit2 equ bit11
+suppress equ bit12
+i16flip equ bit13 ; backspace toggle
+portopen equ bit14 ; openport active
+dataflow equ bit15 ; handshake active
+; equates for states2
+email1 equ bit0 ; active
+email2 equ bit1 ; dumping
+email3 equ bit2 ; ignoring
+; equates for states3
+pasting equ bit0 ; pasting the clipboard
+endofline equ bit1 ; cursor moved left
+; dos and ascii constants
+stderr equ 2
+bsp equ 8
+tab equ 9
+lf equ 10
+cr equ 13
+escp equ 27
+silence equ 28
+repeated equ 29
+times equ 30
+return equ 31
+spc equ 32
+ro equ 127
+; data required for device driver structure
+ dw -1, -1 ; link to other device drivers
+ dw bit15 ; character device
+ dw offset strategy
+ dw offset activity
+ db 8 dup (sysnumber)
+configdata: ; start of configuration area
+voxnumber dw maxvoxnum shl 1 ; illegal until initialized
+voxport dw 0 ; lpt#, com#, tts#
+boxdrive db 'c' ; for snapshot path
+prefix db '/' ; might be slash, accent, or escape
+f9flag db f9def
+f10flag db f10def
+autoload db 0
+states0 db 0
+bank0name db '>', 15 dup (0) ; dos prompt
+bank0sub db 8 dup (0)
+bank0flag db f3def, f4def, f5def, f6def, f7def, f8def, f19def, f20def
+bank0table: db 0, 0, 1, 1, 80, maxlines ; subscreen #0
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #1
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #2
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #3
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #4
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #5
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #6
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #7
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #8
+ db 0, 0, 1, 1, 80, maxlines ; subscreen #9
+bank1name db '>B', 14 dup (0) ; brief editor
+bank1sub db '00', 6 dup (0)
+bank1flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank1table: db 0, 0, 1, 25, 48, 25 ; subscreen #0
+ db 0, 0, 49, 25, 80, 25 ; subscreen #1
+ db 0, 0, 1, 25, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank2name db '>WP', 13 dup (0) ; wordperfect
+bank2sub db '00', 6 dup (0)
+bank2flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank2table: db 0, 0, 1, 25, 48, 25 ; subscreen #0
+ db 0, 0, 49, 25, 80, 25 ; subscreen #1
+ db 0, 0, 1, 25, 80, 25 ; subscreen #2
+ db 119, 112, 1, 1, 80, 14 ; subscreen #3
+ db 119, 7, 1, 15, 80, 23 ; subscreen #4
+ db 119, 112, 1, 5, 80, 23 ; subscreen #5
+ db 0, 0, 1, 24, 80, 25 ; subscreen #6
+ db 119, 112, 1, 1, 80, 24 ; subscreen #7
+ db 7, 0, 2, 3, 79, 24 ; subscreen #8
+ db 7, 0, 1, 1, 80, 25 ; subscreen #9
+bank3name db '>FIRST', 10 dup (0) ; first choice
+bank3sub db '00', 6 dup (0)
+bank3flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank3table: db 8, 8, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 2, 80, 24 ; subscreen #1
+ db 0, 0, 1, 1, 80, 1 ; subscreen #2
+ db 0, 0, 49, 2, 80, 2 ; subscreen #3
+ db 0, 0, 1, 25, 80, 25 ; subscreen #4
+ db 119, 19, 1, 4, 80, 24 ; subscreen #5
+ db 0, 0, 1, 4, 80, 23 ; subscreen #6
+ db 0, 0, 1, 4, 80, 5 ; subscreen #7
+ db 0, 0, 1, 2, 45, 2 ; subscreen #8
+ db 255, 3, 1, 2, 80, 23 ; subscreen #9
+bank4name db '>PROCOMM', 8 dup (0) ; procomm
+bank4sub db 2 dup (0), '2', 5 dup (0)
+bank4flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank4table: db 0, 0, 1, 25, 48, 25 ; subscreen #0
+ db 0, 0, 49, 25, 80, 25 ; subscreen #1
+ db 0, 0, 1, 25, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank5name db '>WS', 13 dup (0) ; wordstar
+bank5sub db 8 dup (0)
+bank5flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank5table: db 0, 0, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 1, 1, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank6name db '>HEXEDIT', 8 dup (0) ; hex editor
+bank6sub db '00', 6 dup (0)
+bank6flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank6table: db 0, 0, 1, 1, 80, 1 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 1, 1, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank7name db '>BOOKMGR', 8 dup (0) ; book manager
+bank7sub db 8 dup (0)
+bank7flag db f3def, f4def, f5def, 2, f7def, f8def, f19def, f20def
+bank7table: db 0, 0, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 1, 1, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank8name db '>NT', 13 dup (0) ; nettamer
+bank8sub db 2 dup (0), '2', 5 dup (0)
+bank8flag db f3def, f4def, f5def, 1, f7def, f8def, f19def, f20def
+bank8table: db 0, 0, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 16, 25, 64, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+bank9name db '>P11', 12 dup (0) ; EASY CHARTS
+bank9sub db 8 dup (0)
+bank9flag db f3def, f4def, f5def, 4, f7def, f8def, f19def, f20def
+bank9table: db 0, 0, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 1, 1, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+;
+vox1data db '50/5M1/' ; double talk lt
+vox2data db '0H/' ; porttalk
+vox3data db '50/5M1/' ; dtpc
+vox4data db 'F11/' ; audapter
+vox5data db '7/' ; votrax pss
+vox7data db '5/5/' ; accent
+vox8data db '0/' ; dectalk pc
+vox9data db '50/5M1/' ; litetalk 
+vox10data db '0H/' ; braille mate
+ db sysnumber ; filler for even byte alignment
+configsize equ $ - configdata ; end of configdata
+;
+; states -- available but not overwritten by pv
+states1 dw joined or i8busy 
+states2 db 0 ; for email filter
+states3 db 0
+bankname db 16 dup (0) ; active configuration data
+banksub db 8 dup (0)
+f3flag db f3def
+f4flag db f4def
+f5flag db f5def
+f6flag db f6def
+f7flag db f7def
+f8flag db f8def
+f19flag db f19def
+f20flag db f20def
+banktable: db 0, 0, 1, 1, 80, 25 ; subscreen #0
+ db 0, 0, 1, 1, 80, 25 ; subscreen #1
+ db 0, 0, 1, 1, 80, 25 ; subscreen #2
+ db 0, 0, 1, 1, 80, 25 ; subscreen #3
+ db 0, 0, 1, 1, 80, 25 ; subscreen #4
+ db 0, 0, 1, 1, 80, 25 ; subscreen #5
+ db 0, 0, 1, 1, 80, 25 ; subscreen #6
+ db 0, 0, 1, 1, 80, 25 ; subscreen #7
+ db 0, 0, 1, 1, 80, 25 ; subscreen #8
+ db 0, 0, 1, 1, 80, 25 ; subscreen #9
+banksize equ $-bankname
+;
+; messages
+i8msg1 db 'not found', 0
+i8msg2 db 'time out ', 0
+i8msg3 db 'o k'
+i8msg4 db ro, 0
+i8msg5 db 'not defined', 0
+i8msg6 db ro, 'screen bank', 0
+i8msg7 db ro, 'sub screen to describe', 0
+i8msg8 db ro, 'screen bank to describe', 0
+i8msg9 db 'line', 0
+i8msg10 db 'column', 0
+i8msg11 db 'is now', 0
+i8msg12 db 'starting windows', 0
+i8msg13 db 'closing windows', 0
+i8msg14 db ro, 'blank', 0
+i9pm01 db 'review mode', 0
+i9pm02 db 'exit review', 0
+i9pm03 db 'review mode '
+i9pm04 db 'error', ro,'try again', 0
+i9pm05 db ro, 'no name', 0
+i9pm06 db 'scan target', 0
+i9pm07 db 'scan target ready', 0
+i9pm08 db 'provox shift function keys', ro
+ db 'shift f2 speech menu and special options', ro
+ db 'shift f3 and shift f4 mark sub screen corners', ro
+ db 'shift f5 load screen bank', ro
+ db 'shift f6 save screen bank', ro
+ db 'shift f9 column where keyboard beeps', ro
+ db 'shift f ten', ro, 'watchdog threshold', ro, 0
+i9pm09 db 'the keyboard beeps after column', 0
+i9pm10 db 'watchdog threshold is', 0
+i9pm11 db 'screen bank to load 0/9', ro, 'press slash to clear', 0
+i9pm12 db 'screen bank to save 0/9', 0
+i9pm13 db 'changing prefix', 0
+i9pm14 db ro, 'enter two digits or star for cursor', ro,'or space', 0
+i9pm15 db ro, 'press 0/9', ro, 'or space', 0
+i9pm16 db 'keystroke to describe', 0
+i9pm17 db 'asky', 0
+i9pm18 db 'scan code', 0
+i9pm19 db ro, 'sub screen 0/9', 0
+i9pm20 db 'smart screen is', 0
+i9pm21 db 'press 1 for the', 0
+i9pm22 db 'menu', ro,'press 2 to edit auto alert', ro
+ db 'press 3 to edit auto ignore'
+i9pm23 db ro, 'or press escape', 0
+i9pm24 db 'f1 set standard voice', 0
+i9pm25 db 'f3 change voice', 0
+i9pm26 db 'f3 and f4 change pitch', 0
+i9pm27 db 'f5 and f6 change filter', 0
+i9pm28 db 'f3 and f4 change inflection', 0
+i9pm29 db 'f5 and f6 change voice', 0
+i9pm30 db 'sub screen corners are not marked', 0
+i9pm31 db 'corner 1', ro, 0
+i9pm32 db 'corner 2', ro, 0
+i9pm33 db 'background 0/7', ro, 'or space', 0
+i9pm34 db ro, 'fore ground 0/7', ro, 'or space', 0
+i9pm35 db ro, 'intensity 0/1', ro, 'or space', 0
+i9pm36 db 'open which port? 1 2 3 or 4', 0
+i9pm37 db ro, 'open port closed', 0
+i9pm38 db ro, 'open port active', 0
+i9pm39 db ro, 'e mail filter closed', 0
+i9pm40 db ro, 'e mail filter active', 0
+i9pm41 db 'count=0', 0
+;
+dec0name db 'perfect paul', 0
+dec1name db 'huge harry', 0
+dec2name db 'frail frank', 0
+dec3name db 'doctor dennis', 0
+dec4name db 'beautiful betty', 0
+dec5name db 'uppity ursula', 0
+dec6name db 'rough rita', 0
+dec7name db 'whispering wendy', 0
+dec8name db 'kit the kid', 0
+;
+tell1cm4 db 'askey', 0
+tlc0 db 'space (null)', 0
+tlc1 db 'face', 0
+tlc2 db 'face inverted', 0
+tlc3 db 'hearts', 0
+tlc4 db 'diamonds', 0
+tlc5 db 'clubs', 0
+tlc6 db 'spades', 0
+tlc7 db 'dot', 0
+tlc8 db 'inverted dot', 0
+tlc9 db 'circle', 0
+tlc10 db 'inverted circle', 0
+tlc11 db 'man symbol', 0
+tlc12 db 'woman symbol', 0
+tlc13 db 'note', 0
+tlc14 db 'note double', 0
+tlc15 db 'sun', 0
+tlc16 db 'triangle right', 0
+tlc17 db 'triangle left', 0
+tlc18 db 'arrow up and down', 0
+tlc19 db 'exclamation sign double', 0
+tlc20 db 'paragraph english', 0
+tlc21 db 'paragraph german', 0
+tlc22 db 'block horizontal', 0
+tlc23 db 'arrow up, down, underlined', 0
+tlc24 db 'arrow up', 0
+tlc25 db 'arrow down', 0
+tlc26 db 'arrow right', 0
+tlc27 db 'arrow left', 0
+tlc28 db 'rectangle half', 0
+tlc29 db 'arrow left and right', 0
+tlc30 db 'triangle up', 0
+tlc31 db 'triangle down', 0
+tlc127 db 'open triangle', 0
+tlc128 db 'capital c cedille', 0
+tlc129 db 'u diaeresis', 0
+tlc130 db 'e accent aigu', 0
+tlc131 db 'a circumflex', 0
+tlc132 db 'a diaeresis', 0
+tlc133 db 'a accent grave', 0
+tlc134 db 'a circle (scandinavian)', 0
+tlc135 db 'c cedille', 0
+tlc136 db 'e circumflex', 0
+tlc137 db 'e diaeresis', 0
+tlc138 db 'e accent grave', 0
+tlc139 db 'i diaeresis', 0
+tlc140 db 'i circumflex', 0
+tlc141 db 'i accent grave', 0
+tlc142 db 'capital a diaeresis (umlaut)', 0
+tlc143 db 'capital a circle', 0
+tlc144 db 'capital e aigu', 0
+tlc145 db 'ae (scandinavian)', 0
+tlc146 db 'capital ae (scandinavian)', 0
+tlc147 db 'o circumflex', 0
+tlc148 db 'o diaeresis', 0
+tlc149 db 'o accent grave', 0
+tlc150 db 'u circumflex', 0
+tlc151 db 'u accent grave', 0
+tlc152 db 'y diaeresis (dutch ij)', 0
+tlc153 db 'capital o diaeresis', 0
+tlc154 db 'capital u diaeresis', 0
+tlc155 db 'dollar cent', 0
+tlc156 db 'pound', 0
+tlc157 db 'yen', 0
+tlc158 db 'peseta', 0
+tlc159 db 'gulden (dutch)', 0
+tlc160 db 'a accent aigu', 0
+tlc161 db 'i accent aigu', 0
+tlc162 db 'o accent aigu', 0
+tlc163 db 'u accent aigu', 0
+tlc164 db 'n tilde (spanish)', 0
+tlc165 db 'capital n tilde', 0
+tlc166 db 'a underline', 0
+tlc167 db 'o underline', 0
+tlc168 db 'reversed question mark (spanish)', 0
+tlc169 db 'angle left/up', 0
+tlc170 db 'angle right/up', 0
+tlc171 db 'half', 0
+tlc172 db 'quarter', 0
+tlc173 db 'reversed exclamation sign (spanish)', 0
+tlc174 db 'double arrow left', 0
+tlc175 db 'double arrow right', 0
+tlc176 db 'dotted area', 0
+tlc177 equ offset tlc176
+tlc178 equ offset tlc176
+tlc179 db 'line up/down', 0
+tlc180 db 'line up/down/left', 0
+tlc181 equ offset tlc180
+tlc182 equ offset tlc180
+tlc183 db 'line left/down', 0
+tlc184 equ offset tlc183
+tlc185 equ offset tlc180
+tlc186 equ offset tlc179
+tlc187 equ offset tlc183
+tlc188 db 'line left/up', 0
+tlc189 equ offset tlc188
+tlc190 equ offset tlc188
+tlc191 equ offset tlc183
+tlc192 db 'line up/right', 0
+tlc193 db 'line left/right/up', 0
+tlc194 db 'line left/right/down', 0
+tlc195 db 'line up/down/right', 0
+tlc196 db 'line left/right', 0
+tlc197 db 'line up/down/left/right', 0
+tlc198 equ offset tlc195
+tlc199 equ offset tlc195
+tlc200 equ offset tlc192
+tlc201 db 'line down/right', 0
+tlc202 equ offset tlc193
+tlc203 equ offset tlc194
+tlc204 equ offset tlc195
+tlc205 equ offset tlc196
+tlc206 equ offset tlc197
+tlc207 equ offset tlc193
+tlc208 equ offset tlc193
+tlc209 equ offset tlc194
+tlc210 equ offset tlc194
+tlc211 equ offset tlc192
+tlc212 equ offset tlc192
+tlc213 equ offset tlc201
+tlc214 equ offset tlc201
+tlc215 db 'line left/right/up/down', 0
+tlc216 equ offset tlc215
+tlc217 equ offset tlc188
+tlc218 db 'line right/down', 0
+tlc219 db 'block', 0
+tlc220 db 'block lower half', 0
+tlc221 db 'block left half', 0
+tlc222 db 'block right half', 0
+tlc223 db 'block upper half', 0
+tlc224 db 'alpha', 0
+tlc225 db 'beta', 0
+tlc226 db 'gamma capital', 0
+tlc227 db 'pi', 0
+tlc228 db 'sigma capital', 0
+tlc229 db 'sigma', 0
+tlc230 db 'mu', 0
+tlc231 db 'tau', 0
+tlc232 db 'phi capital', 0
+tlc233 db 'theta', 0
+tlc234 db 'omega capital', 0
+tlc235 db 'delta', 0
+tlc236 db 'infinite', 0
+tlc237 db 'phi small', 0
+tlc238 db 'element of (capital epsilon)', 0
+tlc239 db 'intersection (reversed u)', 0
+tlc240 db 'identical', 0
+tlc241 db 'plus minus', 0
+tlc242 db 'greater or equal', 0
+tlc243 db 'less or equal', 0
+tlc244 db 'integral sign upper part', 0
+tlc245 db 'integral sign lower part', 0
+tlc246 db 'divide by (dash, dot above and below)', 0
+tlc247 db 'approximately equal', 0
+tlc248 db 'grade mark', 0
+tlc249 db 'filled grade mark', 0
+tlc250 db 'dot (bold)', 0
+tlc251 db 'root', 0
+tlc252 db 'enth power', 0
+tlc253 db 'power 2', 0
+tlc254 db 'vertical small block', 0
+tlc255 db 'space (''ff'')', 0
+;
+tell1b db 'brahvo', 0
+tell1c db 'charlie', 0
+tell1d db 'delta', 0
+tell1e db 'echo', 0
+tell1f db 'fox trot', 0
+tell1g db 'golf', 0
+tell1h db 'ho tel', 0
+tell1i db 'item', 0
+tell1j db 'juliet', 0
+tell1k db 'keelo', 0
+tell1l db 'lima', 0
+tell1m db 'mike', 0
+tell1n db 'november', 0
+tell1o db 'oscar', 0
+tell1p db 'poppa', 0
+tell1q db 'quebec', 0
+tell1r db 'romeo', 0
+tell1s db 'sierra', 0
+tell1t db 'tango', 0
+tell1u db 'uniform', 0
+tell1v db 'victoria', 0
+tell1w db 'whiskey', 0
+tell1x db 'x ray', 0
+tell1y db 'yankee', 0
+tell1z db 'zulu', 0
+;
+i9tlm1 db 'caps lock', 0
+i9tlm2 db 'num lock', 0
+i9tlm3 db 'scroll lock', 0
+i9tlm4 db 'alt', 0
+i9tlm5 db 'shift', 0
+i9tlm6 db 'control', 0
+i9tlm7 db 'enhanced mode', 0
+;
+vox1name db 'double talk l t', 0
+vox2name db 'port talk', 0
+vox3name db 'double talk p c', 0
+vox4name db 'audapter', 0
+vox5name db 'votrax p s s', 0
+vox6name db 'braille and speak', 0
+vox7name db 'accent', 0
+vox8name db 'dectalk p c', 0
+vox9name db 'lite talk', 0
+vox10name db 'braille mate', 0
+;
+i9tsm01 db 'contayns', 0
+i9tsm02 db 'provox function keys', ro
+ db 'f2 lock keys and modes', ro
+ db 'f3 numbers', 0
+i9tsm03 db 'f4 capitals', 0
+i9tsm04 db 'f5 punctuation', 0
+i9tsm05 db 'f6 smart screen', 0
+i9tsm06 db 'f7 keystroke echo', 0
+i9tsm07 db 'f8 screen echo', 0
+i9tsm08 db 'f9 speed', 0
+i9tsm09 db 'f ten', ro,'volume', 0
+i9tsm10 db ro, 'video mode', 0
+i9tsm11 db 'pm', 0
+i9tsm12 db ro, 'its', 0
+i9tsm13 db ro, 'clip board', 0
+i9tsm14 db 'count=', 0
+;
+htm13 db 'top left', 0
+htm17 db 'bottom right', 0
+tlfm1 db ro, 'no filter', 0
+tlfm2 db ro, 'bit mask', 0
+tlfm3 db ro, 'bit value', 0
+tlfm4 db ro, 'back ground', 0
+tlfm5 db ro, 'fore ground', 0
+tlfm6 db ro, 'high intensity', 0
+tlfm7 db ro, 'low intensity', 0
+get1cm3 db 'blinking', 0
+get1cm5 db 'black (0)', 0
+get1cm6 db 'blue (1)', 0
+get1cm7 db 'green (2)', 0
+get1cm8 db 'cyan (3)', 0
+get1cm9 db 'red (4)', 0
+get1cm10 db 'magenta (5)', 0
+get1cm11 db 'brown (6)', 0
+get1cm12 db 'light gray (7)', 0
+get1cm13 db 'dark gray (8)', 0
+get1cm14 db 'light blue (9)', 0
+get1cm15 db 'light green (10)', 0
+get1cm16 db 'light cyan (11)', 0
+get1cm17 db 'light red (12)', 0
+get1cm18 db 'light magenta (13)', 0
+get1cm19 db 'yellow (14)', 0
+get1cm20 db 'white (15)', 0
+;
+save2dm1 db 'tab', 0
+save2dm2 db 'escape', 0
+save2dm3 db 'tab left', 0
+save2dm4 db 'home', 0
+save2dm5 db 'page up', 0
+save2dm6 db 'end', 0
+save2dm7 db 'page down', 0
+save2dm8 db 'insert', 0
+save2dm9 db 'delete', 0
+;
+glrm1 db 'auto alert', 0
+glrm3 db 'not asssigned', 0
+glrm4 db 'monitoring sub screen #'
+glrm5 db '#', ro, 'reading sub screen', 0
+glrm6 db 'sub screen to monitor', 0
+glrm7 db 'sub screen to read', 0
+glrm10 db 'enter #', ro
+ db 'or press slash to cancel', ro, 'press escape or space if o k', 0
+ggnrm1 db 'auto ignore', 0
+ggnrm2 db 'first sub screen to ignore', 0
+ggnrm3 db 'second sub screen to ignore', 0
+;
+; hex codes
+x1d db 'repeated', 0
+x1e db 'times', 0
+x1f db 'enter', 0
+x20 db 'space', 0
+x21 db 'exclamation', 0
+x40 db 'at sign', 0
+x5e db 'carit', 0
+x29 db 'right '
+x28 db 'paren ', 0
+x2a db 'star', 0
+x2b db 'plus', 0
+x2c db 'comma ', cr, 0
+x2d db 'dash', 0
+x5f db 'underscore', 0
+x5d db 'right '
+x5b db 'brackit', 0
+x7d db 'right '
+x7b db 'brace', 0
+x3b db 'semi'
+x3a db 'colen', 0
+x3b1 db 'semi'
+x3a1 db 'colon', 0
+x22 db 'quote', 0
+x23 db 'number', 0
+x24 db 'dollar', 0
+x25 db 'percent', 0
+x26 db 'and', 0
+x27 db 'uhposstruphy', 0
+x27a db 'tick', 0
+x60 db 'axent', 0
+x7e db 'tillda', 0
+x7f db 13, 0
+x7f1 db ',', 0
+x5c db 'back slash', 0
+x7c db 'vertical line', 0
+x2e db 'pirryid', 0
+x2e1 db 'period', 0
+x2f db 'slash', 0
+x3c db 'less than', 0
+x3d db 'equals', 0
+x3e db 'grater than', 0
+x3f db 'question', 0
+;
+; common data area
+last1in dw 0 ; char received
+last1out db 0 ; char sent
+last2out db 0 ; char sent
+last3out db 0 ; char sent
+last4out db 0 ; char sent
+last1moved db 0 ; char moved
+later1 db 0 ; for cursor tracking
+later2 db 0 ; how many times to try
+later equ later1 ; for testing both at once
+hl1test db 0
+old2lox db 0
+digit db 0
+charcount dw 0
+stufcount dw 0
+clipcount dw 0
+bufcount dw 0
+bufhead dw offset freespace
+buftail dw offset freespace
+old_irq dd ? ; old irq vector
+combase dw ? ; set from openport_com
+int_mask db ? ; set from openport_com
+old_mask db ? ; previous interrupt mask
+crt_mode dw 8 shl 8
+crt_vidseg dw 0 ; segment of video page
+crt_vidoff dw 0 ; offset of video page
+crt_line db 24
+crt_width db 80 ; line width
+crt_cursor dw 0 ; cursor location
+corner1 dw 0
+corner2 dw 0
+i22shelf db 10 dup (?)
+hotsub db 2*6 dup (?) ; smart screen
+ dw ? ; crc for smart screen
+deadsub db 2*6 dup (?) ; subscreen work space
+tempsub db 6 dup (?) ; subscreen work space
+dowlist dw dow1, dow2, dow3, dow4, dow5, dow6, dow7
+dow1 db 'sunday', ro, 0
+dow2 db 'monday', ro, 0
+dow3 db 'tuesday', ro, 0
+dow4 db 'wednesday', ro, 0
+dow5 db 'thursday', ro, 0
+dow6 db 'friday', ro, 0
+dow7 db 'saturday', ro, 0
+moylist dw moy01, moy02, moy03, moy04, moy05, moy06
+ dw moy07, moy08, moy09, moy10, moy11, moy12
+moy01 db 'january', 0
+moy02 db 'february', 0
+moy03 db 'march', 0
+moy04 db 'april', 0
+moy05 db 'may', 0
+moy06 db 'june', 0
+moy07 db 'july', 0
+moy08 db 'august', 0
+moy09 db 'september', 0
+moy10 db 'october', 0
+moy11 db 'november', 0
+moy12 db 'december', 0
+fdom db 9, 12, 12, 8, 10, 13, 8, 11, 7, 9, 12, 7 ; first day of month
+; end of 0preface.a
+
+

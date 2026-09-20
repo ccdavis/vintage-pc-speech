@@ -1,0 +1,894 @@
+; provox 7.x -- 2i8code.a
+; data and code for i8 -- timer
+i8sp dw ?
+i8ss dw ?
+i8count dw 0
+i8seconds dw 0
+i8ticks db 0
+i8pace db 18
+i8wait1 db 1
+i8wait2 db 73 ; four seconds
+i8tone dw offset i8rise
+i8tick db 0
+i8wdg db 0
+i8warble dw 256+10, 256+12
+i8fall dw 256+10, 256+12, 0
+i8rise dw 256+12, 256+10, 256+8, 0
+i8mid dw 256+10, 0
+i8mode dw 8 shl 8
+i8vidseg dw 0 ; segment of video page
+i8vidoff dw 0 ; offset of video page
+i8line db 24
+i8width db 80 ; line width
+doscursor dw 0 ; cursor location
+shelfcount dw 0
+shelf db shelfsize dup (?)
+scanterm db 10 dup (?)
+digits db 6 dup (?)
+preplist dw vox3prep, vox2prep, vox3prep, vox4prep, vox5prep
+ dw dummy, vox7prep, vox8prep, vox3prep, vox10prep
+f3hold db 4 ; illegal value
+f4hold db 4 ; illegal value
+f9hold db 4 ; illegal value
+f10hold db 4 ; illegal value
+vox2pm db 5, 'N1', spc, 5, 'R6', spc, 5, 'V7', spc, 0
+vox3pm db 1, '7S', 1, '5V', 1, '6B', 0
+vox4pm db 5, '[r-00]', 5, '11V', 0
+vox5pm db spc, '@C1 @R3 @AC1', spc, 0
+vox7pm db escp, 'R7', escp, 'A9', escp, 'N1', 0
+vox8pm db '[:ra 200]', 0
+vox10pm db 5,'N1', spc, 5, 'R6', spc, 5, 'V7', spc, 0
+;
+i8entry: push ds ; use the caller stack
+mov ds, cs
+ inc b i8ticks
+ cmp b i8ticks, 19
+ jle > l1
+ mov b i8ticks, 0
+ inc w i8seconds
+l1: inc w i8count
+ call speaker
+ cmp b i8wait1, 1 ; check for 0 or 1+
+ jb > l1
+ dec b i8wait1
+l2: pop ds
+i8return db 234 ; far jump
+ dd ? ; original i8 vector
+l1: test w states1, i8busy
+ jnz l2
+ or w states1, i8busy
+ mov w i8ss,ss
+ mov w i8sp,sp
+ cli ; hold interrupts
+ mov ss, cs
+ mov sp, offset int8_stack
+ sti ; take interrupts
+ pushf
+ call d i8return+1
+ push ax, es, bx, cx, dx, si, di
+test w states1, closed or graphics or portopen
+ jnz > l1
+ dec b i8wait2
+ cmp b i8wait2, 0
+  if e call context
+l1: test b states0, output_busy
+ jnz > l1
+mov bx, voxnumber
+ call w preplist[bx]
+l1: test w states1, portopen
+ jz > l1
+ dec b openport_watch
+ cmp b openport_watch, 0
+ if e mov w i8tone, offset i8rise+4
+l1: mov es, 64 ; dos segment
+ es mov al, [98] ; video page
+ cbw
+ shl ax, 1
+ mov bx, 80 ; cursor list
+ add bx, ax
+ es mov dx, [bx] ; cursor location
+ mov doscursor, dx
+ test w states1, joined
+ if nz mov w revcursor, dx   
+ es mov cl, [74] ; line width
+ mov i8width, cl
+ es mov bx, [78] ; page offset
+ mov i8vidoff, bx
+ es mov al, [73] ; video mode
+ mov i8mode, al
+ es mov al, [132] ; max lines-1
+ cmp al, 25
+ jb > l1
+ cmp al, maxlines
+ jb > l2
+l1: mov al, 24
+l2: mov i8line, al
+ or w states1, graphics
+ mov ax, 0b800h ; video segment for cga
+ es cmp b [73], 4
+ jb > l1
+ mov ax, 0b000h ; video segment if mode 7
+ es cmp b [73], 7
+ jne > l2
+l1: and w states1, not graphics
+l2: mov i8vidseg, ax
+ mov es, ax
+ test w states1, closed or graphics or portopen
+ jnz > l1
+ test w i8count, 1 ; skip every other tick
+ jnz > l1
+ mov ax, w later ; waiting data
+ cmp b f6flag, 1 ; smart screen?
+ ja > l2 ; if yes
+ cmp al, '?' ; line request waiting?
+ je > l2
+ cmp al, 'A' ; attributes waiting?
+ jnb > l2 ; if yes
+ call isdigit ; box request waiting?
+ jnc > l3 ; if not
+l2: call analyze
+l3: test ax ; anything else waiting?
+ if nz call deferred
+ cmp b f6flag, 2 ; smart screen?
+ jb > l1 ; if not
+ call dynamics
+ call hotscreen
+l1: mov bx, w bufhead
+ cmp bx, w buftail
+ je > l1 ; if no data
+l2: test w states1, holding
+ jnz > l1
+ mov al, [bx] ; next char to al
+ inc bx
+ cmp bx, offset buffer+bufsize
+ if nb mov bx, offset buffer
+ mov w bufhead, bx
+ test al, bit7
+ jnz > l3
+ call callsign
+ call set1char
+ jc > l4 ; drop char
+ call find3repeat
+ jc > l4 ; drop char
+ call find6repeat
+ jc > l4 ; drop char
+l3: push ax
+ call send1char
+ pop ax
+l4: mov bx, last1out ; fetch #1 and #2
+ mov last2out, bx ; store in #2 and #3
+ mov b last1out, al
+ and b last1out, not bit7
+ mov bx, w bufhead
+ cmp bx, w buftail
+ jne l2 ; if more data
+ mov w bufhead, offset buffer
+ mov w buftail, offset buffer
+ mov al, silence
+ call find3repeat
+ call find6repeat
+ mov al, bit7 or cr
+ call send1char
+ mov bx, last1out ; fetch #1 and #2
+ mov last2out, bx ; store in #2 and #3
+ mov b last1out, cr
+l1: mov es, ds
+ test b states0, output_busy
+ jnz > l1
+ mov w charcount, 0
+l2: mov cx, shelfcount
+ jcxz > l3
+ mov si, offset shelf
+ mov di, si
+ cld
+ lodsb
+ call send_char
+ jc > l4 ; if busy
+ mov cx, shelfcount
+ jcxz > l3
+ dec w shelfcount
+ inc w charcount
+ cld
+ rep movsb
+ jmp l2
+l4: cmp w shelfcount, 0
+ jne > l1
+l3: and w states1, not holding
+ mov ax, charcount
+ cmp ax, shelfsize shr 1
+ if nb mov ax, shelfsize shr 1
+ shr ax, 1
+ and ax, 12
+ mov b i8wait1, al
+ mov w charcount, 0
+l1: test b states0, routing
+ jz > l1
+ and b states0, not routing
+ mov ax, w revcursor
+ mov bx, w doscursor
+ cmp ax, bx
+ je > l1
+ cmp w i8count, 144 ; 8 seconds
+ jb > l2 ; accessible_os: was "jb i8mov1", an undefined label; l2 is the cursor-routing move code
+ mov bx, offset i8msg2
+ call sendstring
+ jmp > l1
+l2: xor cl, cl
+ or b states0, watchdog + routing
+ test w i8count, 1
+ jnz > l3
+ mov ch, 80 ; down
+ cmp bh, ah
+ jb > l4
+ ja > l5
+l3: mov ch, 77 ; right
+ cmp bl, al
+ jb > l4
+ je > l1
+ mov ch, 75 ; left
+ jmp > l4
+l5: mov ch, 72 ; up
+l4: mov ah, 5
+ pushf
+ call d i22return+1
+l1: test w states1, continuous
+ jz > l1 ; if not
+ cmp b i8pace, 0
+ jne > l2
+ mov ax, w bufhead
+ xor ax, w buftail
+ or ax, shelfcount
+ or ax, charcount
+ or ax, w later
+ test ax ; wait for quiet
+ jnz > l1
+ mov b i8pace, 20
+ mov cx, 80 shl 8; down
+ mov ax, 5 shl 8 ; stuff
+ pushf
+ call d i22return+1
+l2: dec b i8pace
+l1: test b states3, pasting
+ jz > l1
+ and b states3, not pasting
+ mov bx, stufcount
+ cmp w clipcount, bx
+ jna > l1
+ or b states3, pasting
+ mov cl, clipboard[bx]
+ xor ch, ch
+ cmp cl, cr
+ if e mov ch, 28
+ inc w stufcount
+ mov ax, 5 shl 8 ; stuff it
+ pushf
+ call d i22return+1
+l1: pop di, si, dx, cx, bx, es, ax
+ cli ; hold interrupts
+ mov ss, i8ss
+ mov sp, i8sp
+ and w states1, not i8busy
+ pop ds
+ iret ; end of code for i8 -- timer
+speaker: ; entry
+ cmp w i8tone, 0
+ je > l1
+ cmp b i8tick, 0
+ je > l2
+ dec b i8tick
+ ret
+l2: push bx, ax
+ mov bx, i8tone
+ cmp w [bx], 0
+ jne > l2
+ mov w i8tone, 0
+ in al, 97
+ and al, not 3
+ out 97, al
+ jmp > l3
+l2: add w i8tone, 2
+ mov ax, 182
+ out 67, al
+ xor al, al
+ out 66, al
+ mov ax, [bx]
+ mov i8tick, ah
+ out 66, al
+ in al, 97
+ or al, 3
+ out 97, al
+l3: pop ax, bx
+ ret
+l1: cmp w i8count, 10
+ ja > l1
+ push ax ; turn it off
+ in al, 97 ; speaker off
+ and al, not 3
+ out 97, al
+ pop ax
+ jmp > l2
+l1: test b states0, buzzer
+ jz > l2
+ push ax ; turn it on
+ mov ax, 182
+ out 67, al
+ mov ax, 16383 ; buzz pitch
+ out 66, al
+ xchg ah, al
+ out 66, al
+ in al, 97 ; speaker on
+ or al, 3
+ out 97, al
+ mov w i8count, 0
+ pop ax
+l2: test b states0, watchdog
+ jnz > l1
+ cmp b i8wdg, 0
+ je ret
+ dec b i8wdg
+ ret
+l1: push ax
+ mov al, f20flag
+ test al
+ jz > l1
+ inc b i8wdg
+ cmp b i8wdg, al
+ jb > l1
+ dec b i8wdg
+ in al, 97
+ or al, 1
+ xor al, 3
+ out 97, al
+l1: and b states0, not watchdog
+ pop ax
+ ret
+; end of speaker
+vox2prep: ; entry
+ mov al, f3flag
+ cmp f3hold, al
+ jne > l1
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l2
+ mov al, f10flag
+ cmp b f10hold, al
+ jne > l3
+ ret
+l1: mov f3hold, al
+ mov ah, '1' ; use if al =0
+ test al, 1
+ if nz mov ah, '0' ; use if al = 1
+ mov vox2pm[2], ah
+ mov al, f9flag
+l2: mov f9hold, al
+ mov ah, '6' ; use if al is 0
+ add ah, al ; otherwise use higher value
+ mov vox2pm[6], ah
+ mov al, f10flag
+l3: mov f10hold, al
+ mov ah, '2' ; use if al=0
+ add ah, al
+ add ah, al
+ mov vox2pm[10], ah
+ mov bx, offset vox2pm
+put2string: ; entry
+ or b states0, output_busy
+l1: mov al, [bx] ; next char
+ test al
+ jz > l2
+ inc bx
+ push bx
+ mov bx, voxnumber
+ mov dx, voxport
+ cmp bx, 4 ; doubletalk?
+ jne > l3
+ mov ah, al
+ call dt2output
+ pop bx
+ jmp l1
+l3: cmp dx, 4 ; parallel?
+ jb > l3
+ and dx, not bit2
+ cmp dx, 4 ; serial?
+ jb > l4
+ pop bx
+l2: and b states0, not output_busy
+ sti ; take interrupts
+ ret
+l4: mov ah, 1 ; serial write
+ int 20
+ pop bx
+ jmp l1
+l3: xor ah, ah ; parallel write
+ pushf
+ call d i23port
+ pop bx
+ jmp l1
+; end of put2string
+; end of vox2prep
+vox3prep: ; entry
+ mov al, f3flag
+ cmp f3hold, al
+ jne > l1
+ mov al, f9flag
+ cmp b f9hold, al
+ jne > l2
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l3
+ ret
+l1: mov f3hold, al
+ mov ah, '2'
+ test al
+ if e mov ah, '6'
+ mov vox3pm[7], ah
+ mov al, f9flag
+l2: mov f9hold, al
+ mov ah, '9'
+ cmp al, 3
+ je > l1
+ mov ah, '7'
+ cmp al, 2
+ je > l1
+ mov ah, '5'
+ cmp al, 1
+ je > l1
+ mov ah, '3'
+l1: mov vox3pm[1], ah
+ mov al, f10flag
+l3: mov f10hold, al
+ mov ah, '5'
+ cmp al, 3
+ je > l1
+ mov ah, '4'
+ cmp al, 2
+ je > l1
+ mov ah, '2'
+ cmp al, 1
+ je > l1
+ mov ah, '1'
+l1: mov vox3pm[4], ah
+ mov bx, offset vox3pm
+ jmp put2string
+; end of vox3prep
+vox4prep: ; entry
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l1
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l2
+ ret
+l1: mov f9hold, al
+ mov bx, '66'
+ cmp al, 3
+ je > l1
+ mov bx, '44'
+ cmp al, 2
+ je > l1
+ mov bx, '22'
+ cmp al, 1
+ je > l1
+ mov bx, '00'
+l1: mov vox4pm[4], bx
+ mov al, f10flag
+l2: mov f10hold, al
+ mov bx, '41' ; backwords 14
+ cmp al, 3
+ je > l1
+ mov bx, '11'
+ cmp al, 2
+ je > l1
+ mov bx, '80' ; backwords 08
+ cmp al, 1
+ je > l1
+ mov bx, '50' ; backwords 05
+l1: mov vox4pm[8], bx
+ mov bx, offset vox4pm
+ jmp put2string
+; end of vox4prep
+vox5prep: ; entry
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l1
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l2
+ ret
+l1: mov f9hold, al
+ mov ah, '5' ; use if al is 0
+ sub ah, al ; otherwise use lower value
+ mov vox5pm[7], ah
+ mov al, f10flag
+l2: mov f10hold, al
+ mov ah, 'C' ; use if al=3
+ cmp al, 3
+ je > l1
+ mov ah, 'A' ; use if al=2
+ cmp al, 2
+ je > l1
+ mov ah, '8' ; use if al=1
+ cmp al, 1
+ je > l1
+ mov ah, '6' ; use if al=0
+l1: mov vox5pm[11], ah
+ mov bx, offset vox5pm
+ jmp put2string
+; end of vox5prep
+vox7prep: ; entry
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l1
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l2
+ ret
+l1: mov f9hold, al
+ mov ah, '3' ; use if al is 0
+ test al
+ jz > l1
+ mov ah, '7' ; use if al is 1
+ cmp al, 1
+ je > l1
+ mov ah, 'B' ; use if al is 2
+ cmp al, 2
+ je > l1
+ mov ah, 'F' ; use if al is 3
+l1: mov b vox7pm[2], ah
+ mov al, f10flag
+l2: mov f10hold, al
+ mov ah, '9' ; use if al=3
+ cmp al, 3
+ je > l1
+ mov ah, '7' ; use if al=2
+ cmp al, 2
+ je > l1
+ mov ah, '5' ; use if al=1
+ cmp al, 1
+ je > l1
+ mov ah, '3' ; use if al=0
+l1: mov vox7pm[5], ah
+ mov bx, offset vox7pm
+ jmp put2string
+; end of vox7prep
+vox8prep: ; entry
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l1
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l2
+ ret
+l1: mov f9hold, al
+ add al, '1'
+ cmp al, '1'
+ jb > l1
+ cmp al, '4'
+ ja > l1
+ mov vox8pm[5], al
+l1: mov al, f10flag
+l2: mov f10hold, al
+ mov bl, 30
+ cmp al, 3
+ je > l1
+ mov bl, 12
+ cmp al, 2
+ je > l1
+ mov bl, 5
+ cmp al, 1
+ je > l1
+ mov bl, 2
+l1: mov ax, dec_sysnumber shl 8 + 6 ; set volume
+ int 47
+ mov bx, offset vox8pm
+put8string: ; entry
+ push dx
+ or b states0, output_busy
+l1: mov al, [bx]
+ test al
+ jnz > l2
+ and b states0, not output_busy
+ pop dx
+ ret
+l2: push bx, ax
+l2: mov ax, dec_sysnumber shl 8 + 3 ; dectalk status
+ int 47
+ test dl, bit4 ; cts?
+ jz l2
+ pop ax
+ mov ah, 1
+ mov dx, voxport
+ and dx, not bit2
+ int 20
+ pop bx
+ inc bx
+ jmp l1
+; end of put8string
+; end of vox8prep
+vox10prep: ; entry
+ mov al, f3flag
+ cmp f3hold, al
+ jne > l1
+ mov al, f9flag
+ cmp f9hold, al
+ jne > l2
+ mov al, f10flag
+ cmp f10hold, al
+ jne > l3
+ ret
+l1: mov f3hold, al
+ mov ah, '1' ; use if al =0
+ test al, 1
+ if nz mov ah, '0' ; use if al = 1
+ mov vox10pm[2], ah
+ mov al, f9flag
+l2: mov f9hold, al
+ mov ah, '3' ; use if al is 0
+ add ah, al ; otherwise use higher value
+ add ah, al
+ mov vox10pm[6], ah
+ mov al, f10flag
+l3: mov f10hold, al
+ mov ah, '2' ; use if al=0
+ add ah, al
+ add ah, al
+ mov vox10pm[10], ah
+ mov bx, offset vox10pm
+ jmp put2string
+; end of vox10prep
+;
+find3repeat: ; entry
+ inc w find3count ; inc or zero repeat count
+ cmp b last1out, al
+ jne > l1
+ cmp al, spc
+ jb > l1
+ cmp w find3count, 3
+ jb > l2
+ stc ; drop char
+ ret
+l1: cmp w find3count, 3
+ jna > l1
+ mov bx, find3count
+ call send1repeat
+l1: mov w find3count, 0
+l2: clc ; keep char
+ ret
+find3count dw 0 ; repeat count
+; end of find3repeat
+find6repeat: ; entry
+ inc w find6count ; inc or zero repeat count
+ mov ah, last1out ; ax = #1, #0
+ cmp ah, al ; #1=#0?
+ je > l1
+ mov bx, last2out ; bx = #3, #2
+ cmp ax, bx ; #3=#1, #2=#0?
+ jne > l1
+ cmp al, spc
+ jb > l1
+ cmp w find6count, 4
+ jb > l2
+ stc ; drop char
+ ret
+l1: mov bx, find6count
+ cmp bx, 4
+ jna > l1
+ inc bx
+ inc bx
+ call send1repeat
+l1: mov w find6count, 0
+l2: clc ; keep char
+ ret
+find6count dw 0 ; repeat count
+; end of find6repeat
+send1repeat: ; entry
+ push ax, bx
+ mov al, repeated or bit7
+ call send1char
+ pop ax
+ mov bl, '0'
+ cmp al, 10 ; one digit?
+ jb > l1 ; if yes
+ cmp al, 100 ; two digits?
+ jb > l2 ; if yes
+l3: inc bl
+ sub al, 100
+ cmp al, 100
+ jnb l3
+ push ax
+ mov al, bl
+ call send1char
+ pop ax
+ mov bl, '0'
+ cmp al, 10
+ jb > l3
+l2: inc bl
+ sub al, 10
+ cmp al, 10
+ jnb l2
+l3: push ax
+ mov al, bl
+ call send1char
+ pop ax
+l1: add al, '0'
+ call send1char
+ mov al, times or bit7
+ call send1char
+ pop ax
+ ret
+; end of send1repeat
+callsign: ; entry
+ cmp b spelcount, 1
+ jb > l1
+ if na mov b capcount, 0
+ dec b spelcount
+ ret
+l1: mov si, ax
+ inc b capcount
+ call isalpha
+ if nc mov b capcount, 0
+ cmp b capcount, 1
+ ja > l1
+ call hamsign
+ if c mov b spelcount, ah
+l1: mov ax, si
+ ret
+capcount db 0
+spelcount db 0
+; end of callsign
+hamsign: ; entry
+ call isalpha ; first char
+ jnc > l1 ; if not
+ mov al, [bx] ; second char
+ call isdigit
+ jnc > l2 ; if not
+ mov al, [bx+1] ; third char
+ call isalpha
+ jnc > l1 ; if not
+ mov al, [bx+2] ; fourth char
+ call isalpha
+ jnc > l1 ; if not
+ mov al, [bx+3] ; fifth char
+ call isalpha
+ jc > l3 ; if yes
+ call isdigit
+ jc > l1 ; if yes
+ mov ah, 4
+ stc ; 1 by 2 call sign
+ ret
+l3: mov al, [bx+4] ; sixth char
+ call isalpha
+ jc > l1 ; if yes
+ call isdigit
+ jc > l1 ; if yes
+ mov ah, 5
+ stc ; 1 by 3 call sign
+ ret
+l2: mov al, [bx+1] ; third char
+ call isdigit
+ jnc > l1 ; if not
+ mov al, [bx+2] ; fourth char
+ call isalpha
+ jnc > l1 ; if not
+ mov ah, 4
+ mov al, [bx+3] ; fifth char
+ call isalpha
+ jnc > l2 ; if not
+ inc ah
+ mov al, [bx+4] ; sixth char
+ call isalpha
+ jnc > l2 ; if not
+ inc ah
+ mov al, [bx+5] ; seventh char
+ call isalpha
+ jc > l1 ; if yes
+l2: call isdigit
+ jc > l1 ; if yes
+ stc ; 2 by 1, 2 by 2, 2 by 3 call sign
+ ret
+l1: clc ; not call sign
+ ret
+; end of hamsign
+send_char: ; entry
+ test b states0, output_busy
+ jz > l1
+ stc ; busy
+ ret
+l1: and ax, ro
+ push ax
+ mov bx, voxnumber
+ mov dx, voxport
+ cmp bx, 4 ; doubletalk?
+ je > l1
+ cmp dx, 4 ; parallel?
+ jb > l2 ; if yes
+ and dx, not bit2
+ cmp dx, 4 ; serial?
+ jnb > l3 ; if not
+ cmp bx, 14 ; dectalk pc?
+ je > l4
+ mov ax, 3 shl 8 ; status
+ int 20
+ test ah, 1 ; data ready?
+ jz > l5 ; if not
+ push ax
+ mov ax, 2 shl 8 ; serial read
+ int 20
+ mov b handshake, al
+ pop ax
+l5: cmp b handshake, 19 ; x off?
+ je > l3 ; if so
+ test al, bit4 ; cts?
+ jz > l3 ; if not
+ pop ax
+ mov ah, 1 ; write
+ int 20
+ jmp > l5
+l2: pop ax
+ pushf
+ call d i23port
+ jmp > l5
+l1: in al, dx ; dtpc status
+ test al, bit2 ; almost empty?
+ jz > l3 ; if not
+ pop ax
+ mov ah, al
+ call dt2output
+ jmp > l5
+l4: test w states1, dec_ready
+ jnz > l4
+ mov ax, dec_sysnumber shl 8 or 3 ; dectalk status
+ push dx
+ int 47
+ test dl, bit4 ; cts?
+ pop dx
+ jz > l3 ; if not
+ pop ax
+ mov ah, 1 ; write
+ int 20
+l5: clc ; clear
+ ret
+l4: and w states1, not dec_ready
+ mov ax, dec_sysnumber shl 8 or 22 ; resume
+ int 47
+l3: add sp, 2
+ stc ; busy
+ ret
+handshake db 0 ; x-on x-off
+; end of send_char
+set1char: ; entry
+ cmp b spelcount, 0 ; spelling?
+ je > l1 ; if not
+ cmp al, spc
+ je > l2 ; if so
+ push ax ; insert silent space if alpha
+ call isalpha
+ jnc > l3
+ mov al, silence
+ call send1char
+ pop ax
+ jmp > l4
+l3: pop ax
+l1: cmp al, spc
+ jne > l4
+ cmp b f5flag, 3 ; say all punctuation?
+ je > l4
+ mov al, last1out ; after alpha?
+ call isalpha
+ jc > l1 ; if so
+l2: mov al, ro ; use pause
+ jmp > l2
+l1: mov al, silence
+l2: cmp b last1out, silence
+ je > l1
+ cmp b last1out, ro
+ je > l1
+l4: clc ; keep char
+ ret
+l1: stc ; drop char
+ ret
+; end of set1char
+; end of 2i8code.a
+
+
+

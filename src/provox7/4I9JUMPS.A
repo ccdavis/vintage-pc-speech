@@ -1,0 +1,836 @@
+; provox 7.x -- 4i9jumps.a
+; shared commands in direct and review modes
+table1 db '.', 52 ; cursor position
+ dw rvw07
+ db '.', 83 ; cursor position
+ dw rvw07
+ db '+', 78 ; current line
+ dw rvw06
+ db 'T', 20 ; time of day
+ dw i9ts32
+ db 'L', 38 ; cursor line
+ dw rvw06
+ db '<', 51 ; left part
+ dw get1screen
+ db '>', 52 ; right part
+ dw get1screen
+ db 'C', 46 ; current char
+ dw rvw08
+ db '-', 74 ; current word
+ dw rvw10
+ db 'W', 17 ; current word
+ dw rvw10
+ db '*', 9 ; current character
+ dw rvw12
+ db '*', 55 ; current character
+ dw rvw12
+ db 'S', 31 ; whole screen
+ dw get1screen
+ db '-', 12 ; upper part
+ dw get1screen
+ db '+', 13 ; lower part
+ dw get1screen
+ db 'G', 34 ; get into clipboard
+ dw i9ts35
+ db 'K', 37 ; kill the clipboard
+ dw i9ts36
+ db 0, 59 ; f1
+ dw i9ts28
+ db 0, 60 ; f2
+ dw i9ts29
+ db 0, 61 ; f3
+ dw i9ts03
+ db 0, 62 ; f4
+ dw i9ts04
+ db 0, 63 ; f5
+ dw i9ts05
+ db 0, 65 ; f7
+ dw i9ts07
+ db 0, 66 ; f8
+ dw i9ts08
+ db 0, 67 ; f9
+ dw i9ts09
+ db 0, 68 ; f10
+ dw i9ts10
+ db 0, 75 ; left arrow
+ dw rvw01
+ db 224, 75 ; left arrow
+ dw rvw01
+ db 240, 76 ; center key
+ dw rvw08
+ db 0, 77 ; right arrow
+ dw rvw02
+ db 224, 77 ; right arrow
+ dw rvw02
+ db 0, 86 ; shift f3
+ dw i9pr24
+ db 0, 87 ; shift f4
+ dw i9pr25
+ db 0, 115 ; ctrl left arrow
+ dw rvw09
+ db 224, 115 ; ctrl left arrow
+ dw rvw09
+ db 0, 116 ; ctrl right arrow
+ dw rvw11
+ db 224, 116 ; ctrl right arrow
+ dw rvw11
+ dw 0 ; end of table1
+; commands in direct mode only
+table2 db '/', 53 ; change prefix
+ dw i9pr06
+ db '`', 41 ; change prefix
+ dw i9pr06
+ db escp, 1 ; change prefix
+ dw i9pr06
+ db 'N', 49 ; name screen bank
+ dw i9pr17
+ db 'P', 25 ; paste from clipboard
+ dw i9pr34
+ db 'R', 19 ; report seconds
+ dw i9pr35
+ db 'Z', 44 ; reset clock count
+ dw i9pr36
+ db '=', 13 ; define a sub screen
+ dw i9pr23
+ db 0, 64 ; f6
+ dw i9pr30
+ db '?', 53 ; interrogate
+ dw i9pr31
+ db 0, 71 ; home -- read top line
+ dw i9pr19
+ db 224, 71 ; home -- read top line
+ dw i9pr19
+ db 0, 72 ; up arrow
+ dw i9pr26
+ db 224, 72 ; up arrow
+ dw i9pr27
+ db 0, 80 ; down arrow
+ dw i9pr28
+ db 224, 80 ; down arrow
+ dw i9pr29
+ db 0, 79 ; end -- read bottom line
+ dw i9pr20
+ db 224, 79 ; end -- read bottom line
+ dw i9pr20
+ db 9, 15 ; tab right -- read a box
+ dw i9pr21
+ db 'B', 48 ; background attributes
+ dw i9pr22
+ db 'E', 18 ; email filter
+ dw i9pr33
+ db 'F', 33 ; foreground attributes
+ dw i9pr22
+ db 'H', 35 ; highlights
+ dw i9pr02
+ db 'O', 24 ; openport
+ dw i9pr32
+ db 0, 81 ; page down -- read continuous
+ dw i9pr07
+ db 224, 81 ; page down -- read continuous
+ dw i9pr07
+ db 0, 82 ; ins -- report keystroke
+ dw i9pr18
+ db 224, 82 ; ins -- report keystroke
+ dw i9pr18
+ db cr, 28 ; enter review
+ dw i9pr03
+ db cr, 224 ; enter review
+ dw i9pr03
+ db 0, 84 ; shift f1
+ dw i9pr16
+ db 0, 85 ; shift f2
+ dw i9pr08
+ db 0, 88 ; shift f5
+ dw i9pr14
+ db 0, 89 ; shift f6
+ dw i9pr15
+ db 0, 92 ; shift f9
+ dw i9pr12
+ db 0, 93 ; shift f10
+ dw i9pr13
+ dw 0 ; end of table2
+; commands in review mode only
+table3 db lf, 28 ; route cursor and exit review
+ dw i9pr04
+ db cr, 224 ; join cursors
+ dw i9dr09
+ db 'H', 35 ; highlights
+ dw i9pr02
+ db 0, 72 ; up arrow
+ dw rvw03
+ db 224, 72 ; up arrow
+ dw rvw03
+ db 0, 80 ; down arrow
+ dw rvw04
+ db 224, 80 ; down arrow
+ dw rvw04
+ db 0, 117 ; ctrl-end
+ dw i9pr10
+ db 224, 117 ; ctrl-end
+ dw i9pr10
+ db 0, 119 ; ctrl-home
+ dw i9pr10
+ db 224, 119 ; ctrl-home
+ dw i9pr10
+ db 0, 118 ; ctrl-page down
+ dw i9pr11
+ db 224, 118 ; ctrl-page down
+ dw i9pr11
+ db 0, 132 ; ctrl-page up
+ dw i9pr11
+ db 224, 132 ; ctrl-page up
+ dw i9pr11
+ db cr, 28 ; exit review
+ dw i9pr05
+ db escp, 1 ; prefix capture
+ dw i9pr01
+ db '/', 53 ; prefix capture
+ dw i9pr01
+ db '`', 41 ; prefix capture
+ dw i9pr01
+ db 0, 71 ; home
+ dw rvw13
+ db 224, 71 ; home
+ dw rvw13
+ db 0, 73 ; page up
+ dw rvw14
+ db 224, 73 ; page up
+ dw rvw14
+ db 0, 79 ; end
+ dw rvw15
+ db 224, 79 ; end
+ dw rvw15
+ db 0, 81 ; page down
+ dw rvw16
+ db 224, 81 ; page down
+ dw rvw16
+ db 0, 82 ; insert
+ dw i9pr09
+ db 224, 82 ; insert
+ dw i9pr09
+ db 0, 83 ; cursor position
+ dw rvw07
+ db 224, 83 ; cursor position
+ dw rvw07
+ dw 0 ; end of table3
+; enhanced mode keypad commands
+table4 db lf, 224 ; cursor routing
+ dw i9dr07
+ db cr, 224 ; join cursors
+ dw i9dr09
+ db 0, 71 ; home
+ dw rvw13
+ db 0, 72 ; up
+ dw rvw03
+ db 0, 73 ; page up
+ dw rvw14
+ db 0, 75 ; left
+ dw rvw01
+ db 240, 76 ; center key
+ dw rvw08
+ db 0, 77 ; right
+ dw rvw02
+ db 0, 79 ; end
+ dw rvw15
+ db 0, 80 ; down
+ dw rvw04
+ db 0, 81 ; page down
+ dw rvw16
+ db 0, 82 ; insert
+ dw i9dr13
+ db 0, 83 ; cursor position
+ dw rvw07
+ db 0, 115 ; ctrl left
+ dw rvw09
+ db 0, 116 ; ctrl right
+ dw rvw11
+ db 0, 117 ; ctrl-end
+ dw i9dr11
+ db 0, 118 ; ctrl-page down
+ dw i9dr14
+ db 0, 119 ; ctrl-home
+ dw i9dr11
+ db 0, 132 ; ctrl-page up
+ dw i9dr14
+ db '.', 83 ; cursor position
+ dw rvw07
+ db '/', 224 ; passthrough
+ dw i9dr10
+ db '*', 55 ; current character
+ dw rvw12
+ db '-', 74 ; current word
+ dw rvw10
+ db '+', 78 ; current line
+ dw rvw06
+; classic mode keypad commands
+table5 db '/', 53 ; prefix
+ dw i9dr08
+ db '`', 41 ; prefix
+ dw i9dr08
+ db escp, 1 ; prefix
+ dw i9dr08
+ dw 0 ; end of table4-table5
+; end of jump tables
+scansize db 0
+scanflag db 0
+scanfind db 0
+namelist dw vox1name, vox2name, vox3name, vox4name, vox5name
+ dw vox6name, vox7name, vox8name, vox9name, vox10name
+
+;
+i9provox: ; entry
+ mov w later, 0
+ jmp w i9switch
+i9sw01: ; not in review mode
+ mov dx, w doscursor
+ mov bx, offset table2 - 4 ; direct mode commands
+ and b states0, not buzzer
+ call dispatch
+ call i9test ; shared commands
+ jc > l1 ; if found
+ call isdigit
+ jnc > l2 ; if not
+ call get1screen
+l1: mov w i9state, offset i9direct ; back to direct mode
+ mov b hl1test, 0
+ and b states0, not buzzer
+ ret
+i9sw02: ; already in review mode
+ and w states1, not ph2flag
+ add w states1, ph1flag
+ and w states1, not ph1flag
+ mov dx, w revcursor
+ mov bx, offset table3 - 4 ; review mode commands
+ call dispatch
+ call i9test ; shared commands
+ jc ret ; if found
+ call isdigit
+ jnc > l5 ; if not
+ mov b digit, al ; first digit of line number
+ call save2data
+ mov w i9switch, offset i9sw03
+i9pr01: ret
+l5: mov w i9switch, offset i9sw02 ; review mode error
+ mov bx, offset i9pm03
+ jmp > l3
+i9pr02: mov b hl1test, 1 ; highlight test
+ ret
+i9pr03: call enter_review
+ jc > l2
+ mov bx, offset i9pm01
+l3: jmp sendstring
+l2: mov bx, offset i9pm04 ; direct mode error
+ jmp > l3
+i9pr04: call exitroute
+i9pr05: call exit_review
+l4: mov w i9switch, offset i9sw01
+l3: call sendstring
+ jmp l1
+i9sw03: call isdigit
+ jnc l5 ; if not
+ call get2digits
+ test ax
+ jz l5
+ xchg ah, al
+ dec ah
+ cmp ah, b i8line
+ ja l5
+ mov w revcursor, ax
+ mov dx, ax
+ call get1line
+ mov w i9switch, offset i9sw02
+ ret
+i9pr06: cmp b hl1test, 0
+ jne l2
+ mov prefix, al ; change prefix
+ mov bx, offset i9pm13
+ jmp l3
+i9pr07: or w states1, continuous
+ call get2line
+ jmp l1
+i9sw04: mov bx, 14 ; allow f1 to f6
+ cmp al, escp
+ je > l5
+ xor bx, bx
+ test al
+ jnz > l5
+ cmp ah, 59 ; f1
+ jb > l5
+ cmp ah, 64 ; f6
+ ja > l5
+ sub ah, 58
+ shl ah, 1
+ mov bl, ah 
+l5: mov ax, voxnumber
+ xchg ax, bx
+ call w menu2list[bx]
+ jc > l5 ; if finished
+l6: mov w i9switch, offset i9sw04
+ mov bx, voxnumber
+ mov bx, menu1list[bx]
+l7: push bx
+ mov bx, [bx]
+ call sendstring
+ pop bx
+ inc bx
+ inc bx
+ cmp w [bx], 0
+ jne l7
+ mov bx, offset i9pm23
+ jmp sendstring
+l5: mov bx, offset i8msg3
+ jmp l4
+i9pr08: mov w i9switch, offset i9sw05
+ mov bx, offset i9pm21
+ call sendstring
+ mov bx, voxnumber
+ mov bx, namelist[bx]
+ call sendstring
+ mov bx, offset i9pm22
+ jmp sendstring
+i9sw05: cmp al, '1' ; device menu?
+ je l6
+ cmp al, '2' ; auto alert?
+ je > l6
+ cmp al, '3' ; auto ignore?
+ je > l7
+ call save2data
+ cmp al, escp
+ jne i9pr08
+l8: mov bx, offset i8msg3
+ jmp l4
+l7: mov w i9switch, offset i9sw06
+ xor ax, ax
+i9sw06: call save2data
+ call get1ignore
+ jc l5 ; if done
+ jmp sendstring
+l6: mov w i9switch, offset i9sw07
+ xor ax, ax
+i9sw07: call save2data
+ call get1alert
+ jc l5 ; if done
+ jmp sendstring
+i9pr09: mov w i9state, offset i9st1
+ mov b scansize, 0
+ mov bx, offset i9pm06
+ or b states0, buzzer
+ jmp sendstring
+i9pr10: call search
+ jc ret
+l5: jmp sendstring
+i9pr11: call scanatt
+ jnc l5 ; found
+ ret
+i9pr12: mov w i9switch, offset i9sw08
+ mov al, f19flag
+ mov bx, offset i9pm09
+ call tell3digits
+ mov bx, offset i9pm14
+ jmp sendstring
+i9sw08: call save2data
+ call isdigit
+ jc i9pr12 ; if so
+ cmp al, '*'
+ jne l8
+ mov al, w doscursor
+ inc al
+ mov f19flag, al
+ jmp short i9pr12
+l5: jmp l8
+i9pr13: mov w i9switch, offset i9sw10
+ mov al, f20flag
+ mov bx, offset i9pm10
+ call tell3digits
+ mov bx, offset i9pm15
+ jmp sendstring
+i9sw10: call save2data
+ call isdigit
+ jnc l5 ; if not
+ sub al, '0'
+ mov f20flag, al
+ jmp l5
+i9pr14: mov w i9switch, offset i9sw11
+ mov bx, offset i9pm11
+ jmp sendstring
+i9sw11: call save2data
+ cmp al, escp
+ je l5
+ cmp al, '/' ; defaults
+ je > l6
+ call isdigit
+ jnc i9pr14 ; error
+ call bankload
+ jmp l4
+l6: call defaults
+ jmp l5
+i9pr15: mov w i9switch, offset i9sw12
+ mov bx, offset i9pm12
+ jmp sendstring
+i9sw12: call save2data
+ cmp al, escp
+ je > l5
+ call isdigit
+ jnc i9pr15 ; error
+ mov b digit, al
+ mov w i9switch, offset i9sw13
+ xor ax, ax
+i9sw13: cmp al, escp
+ je i9sw12
+ call fixname
+ if nc ret
+ push es
+mov es, cs
+ mov al, digit
+ and ax, 15 ; bits 3-0
+ mov cx, banksize
+ mul cl
+ mov di, offset bank0name
+ add di, ax
+ mov si, offset bankname
+ shr cx, 1
+ cld
+ rep movsw
+ pop es
+l5: jmp l8
+i9pr16: mov bx, offset i9pm08
+ jmp l3
+i9pr17: mov w i9switch, offset i9sw14
+ mov bx, offset i8msg8
+ jmp sendstring
+i9sw14: mov bx, offset bankname ; current screen bank
+ call isdigit
+ jnc > l5
+ and ax, 8 or 4 or 2 or 1
+ mov bx, banksize
+ mul bl
+ mov bx, offset bank0name
+ add bx, ax
+l5: cmp b [bx], spc
+ if b mov bx, offset i9pm05
+ jmp l4
+i9pr18: mov w i9switch, offset i9sw15
+ mov bx, offset i9pm16
+ jmp sendstring
+i9sw15: push ax
+ mov bx, offset i9pm17
+ call sendstring
+ pop ax
+ push ax
+ call save3digits
+ mov bx, offset i9pm18
+ call sendstring
+ pop ax
+ mov al, ah
+ call save3digits
+ jmp l4
+i9pr19: xor dh, dh ; read top line
+l5: call test1line ; for nonblank
+ jnc > l6
+ inc dh ; down
+ cmp dh, b i8line
+ jne l5
+ jmp > l6
+i9pr20: mov dh, b i8line ; read bottom line
+l5: call test1line ; for nonblank
+ jnc > l6
+ dec dh
+ test dh, dh ; up if not 0
+ jnz l5
+l6: call rvw05
+ jmp l1
+i9pr21: mov w i9switch, offset i9sw16
+ ret
+i9sw16: cmp ax, 15 shl 8 or 9 ; second tab?
+ je > l5
+ mov w i9switch, offset i9sw01
+ cmp al, '1' ; accept only digits 1 to 9
+ jb > l6
+ cmp al, '9'
+ ja > l6
+ dec al
+ mov ah, 1
+ mov w later, ax
+ jmp l1
+l5: mov w i9switch, offset i9sw17
+ ret
+i9sw17: mov w i9switch, offset i9sw01
+ cmp al, '1' ; accept only digits 1 to 9
+ jb > l6
+ cmp al, '9'
+ ja > l6
+ dec al
+ mov dl, al
+ mov dh, 1
+ and ax, 15 ; now it is 0-8
+ shl ax, 1
+ shl ax, 1
+ mov bx, ax
+ mov ax, boxes_last[bx+0]
+ mov tempsub[2], ax
+ mov ax, boxes_last[bx+2]
+ mov tempsub[4], ax
+ test ax
+ jnz > l5
+ mov ax, boxes_this[bx+0]
+ mov tempsub[2], ax
+ mov ax, boxes_this[bx+2]
+ mov tempsub[4], ax
+ test ax
+ jnz > l5
+ mov w later, dx
+ jmp l1
+l5: call tellsubs
+ jmp l1
+l6: jmp l2 ; error exit
+i9pr22: mov b digit, ah ; scan code of 'b' or 'f'
+ mov w i9switch, offset i9sw18
+ ret
+i9sw18: cmp ah, digit ; 'bb' or 'ff'?
+ jne > l5
+ mov w i9switch, offset i9sw19
+ ret
+l5: mov w i9switch, offset i9sw01
+ cmp al, '1' ; accept 1, 2, 3, 4
+ jb l6
+ cmp al, '4'
+ ja l6
+ mov dx, bit8 or 'A'-'1'
+ cmp b digit, 48 ; 'b' scan code?
+ if ne mov dx, bit8 or 'E'-'1'
+ add dl, al
+ mov w later, dx
+ jmp l1
+i9sw19: mov w i9switch, offset i9sw01
+ cmp al, '1' ; accept 1, 2, 3, 4
+ jb l6
+ cmp al, '4'
+ ja l6
+ dec al
+ and ax, 3 ; now it is 0-3
+ mov bx, ax
+ shl bx, 1 ; si = 6*ax
+ mov si, bx
+ shl bx, 1
+ add si, bx
+ mov cx, bg_this[si] ; background masks
+ mov bl, ch
+ and bx, 7 shl 4
+ shr bx, 1
+ shr bx, 1
+ shr bx, 1
+ mov dx, bit8 or 'A'
+ mov di, offset tlfm4
+ cmp b digit, 48 ; 'b' scan code?
+ je > l5
+ mov cx, fg_this[si]
+ mov bl, ch
+ and bx, 15
+ shl bx, 1 ; times 2
+ mov dx, bit8 or 'E'
+ mov di, offset tlfm5
+l5: jcxz > l6
+ push bx
+ mov bx, di
+ call sendstring
+ pop bx
+ mov bx, get1color[bx]
+ call sendstring
+ jmp l1
+l6: add dl, al
+ mov w later, dx
+ jmp l1
+i9pr23: mov ax, corner1 ; define subscreen
+ or ax, corner2
+ jnz > l5
+ mov bx, offset i9pm30
+ jmp l4
+l5: mov w i9switch, offset i9sw20
+ mov w tempsub, 0
+ mov bx, offset i9pm33
+ jmp sendstring
+i9sw20: call save2data ; background filter
+ cmp al, escp
+ je > l5
+ cmp al, '0'
+ jb > l6
+ cmp al, '7'
+ ja > l6
+ mov ah, 7
+ and al, ah
+ shl ax, 1
+ shl ax, 1
+ shl ax, 1
+ shl ax, 1
+ mov tempsub, ax
+l6: mov w i9switch, offset i9sw21
+ mov bx, offset i9pm34
+ jmp sendstring
+i9sw21: call save2data ; foreground filter
+ cmp al, escp
+ je > l5
+ cmp al, '0'
+ jb > l6
+ cmp al, '7'
+ ja > l6
+ mov ah, 7
+ and al, ah
+ or tempsub, ax
+l6: mov w i9switch, offset i9sw22
+ mov bx, offset i9pm35
+ jmp sendstring
+i9sw22: call save2data ; intensity filter
+ cmp al, escp
+ je > l5
+ cmp al, '0'
+ jb > l6
+ cmp al, '1'
+ ja > l6
+ mov ah, 1
+ and al, ah
+ shl ax, 1
+ shl ax, 1
+ shl ax, 1
+ or tempsub, ax
+l6: mov w i9switch, offset i9sw23
+ mov bx, offset i9pm19
+ jmp sendstring
+i9sw23: call save2data
+l5: cmp al, escp
+ je > l6
+ call isdigit
+ jc > l5
+ mov w i9switch, offset i9sw01
+ jmp l2 ; error
+l5: and ax, 8 or 4 or 2 or 1
+ call times6 ; bx = 6*ax
+ mov cx, corner1
+ mov dx, corner2
+ xor ax, ax
+ mov w corner1, ax
+ mov w corner2, ax
+ mov ax, w tempsub
+ xchg ah, al
+ mov w banktable[bx], ax
+ cmp ch, dh
+ if nb xchg ch, dh
+ cmp cl, dl
+ if nb xchg cl, dl
+ inc ch
+ inc cl
+ mov w banktable[bx+2], cx
+ inc dh
+ inc dl
+ mov w banktable[bx+4], dx
+l6: jmp l8
+i9pr24: mov ax, w revcursor
+ mov w corner1, ax
+ push ax
+ mov bx, offset i9pm31
+ jmp > l4
+i9pr25: mov ax, w revcursor
+ mov w corner2, ax
+ push ax
+ mov bx, offset i9pm32
+l4: call sendstring
+ pop ax
+ jmp tellcursor
+i9pr26: mov dx, w revcursor
+i9pr27: test dh, dh ; up if not 0
+ jz > l4
+ dec dh
+ call test1line ; for nonblank
+ jc i9pr27
+ jmp > l4
+i9pr28: mov dx, w revcursor
+i9pr29: cmp dh, b i8line
+ je > l4
+ inc dh ; down
+ call test1line ; for nonblank
+ jc i9pr29
+l4: call rvw05
+ jmp l1
+i9pr30: mov w i9switch, offset i9sw24 ; smart screen
+ mov al, f6flag
+ mov bx, offset i9pm20
+ call tell3digits
+ mov bx, offset i9pm15
+ jmp sendstring
+i9sw24: call save2data
+ call isdigit
+ jnc l6 ; if not
+ and al, 8 or 4 or 2 or 1
+ mov f6flag, al
+ jmp l6
+i9pr31: mov w i9switch, offset i9sw25 ; report subscreen
+ mov bx, offset i8msg7
+ jmp sendstring
+i9sw25: call toupper
+ call save2data
+ mov w i9switch, offset i9sw01
+ mov dx, w doscursor
+ call prep4regs
+ jnc > l4
+ mov bx, offset i8msg5 ; not defined
+ jmp l3
+l4: call tellsubs
+ call tellfilter
+ jmp l1
+i9pr32: test w states1, portopen ; openport toggle
+ jnz > l4 ; if open
+ mov w i9switch, offset i9sw26
+ mov bx, offset i9pm36
+ jmp sendstring
+i9sw26: call save2data
+ mov w i9switch, offset i9sw01
+ call start_openport
+ jnc > l5 ; if okay
+ jmp l3 ; error
+l4: call close_openport
+ mov bx, offset i9pm37
+l5: xor w states1, portopen
+ jmp l3
+i9pr33: xor b states2, email1
+ mov bx, offset i9pm39
+ test b states2, email1
+ jz > l4
+ mov w emlp1, 0
+ and b states2, not (email2 or email3)
+ mov bx, offset i9pm40
+l4: jmp l3
+i9pr34: mov w stufcount, 0
+ mov bx, offset i9pm41
+ cmp w clipcount, 0
+ je l4
+ or b states3, pasting
+ jmp l1 ; silent exit
+i9pr35: mov ax, i8seconds
+ call save5digits
+ jmp l1
+i9pr36: mov b i8ticks, 0
+ mov w i8seconds, 0
+ mov bx, offset i9pm41
+ jmp l4
+menu1list dw vox1ml, vox1ml, vox1ml, vox4ml, vox5ml
+ dw 0, vox7ml, vox8ml, vox1ml, vox1ml
+vox1ml dw i9pm24, i9pm26, i9pm27, 0
+vox4ml dw i9pm24, i9pm26, 0
+vox5ml dw i9pm24, i9pm28, 0
+vox7ml dw i9pm24, i9pm26, i9pm29, 0
+vox8ml dw i9pm24, i9pm25, 0
+menu2list dw vox1menu, vox2menu, vox3menu, vox4menu, vox5menu
+ dw dummy, vox7menu, vox8menu, vox9menu, vox10menu
+i9switch dw i9sw01
+; end of i9provox
+; dispatch -- jumps if found, returns if not found
+dispatch: call toupper
+l1: add bx, 4
+ cmp w [bx], 0
+ je ret
+ cmp [bx], ax
+ jne l1
+ add sp, 2
+ jmp w [bx+2] ; end of dispatch
+;end of 4i9jumps.a
+
+

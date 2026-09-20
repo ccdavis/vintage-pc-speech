@@ -1,0 +1,576 @@
+        
+                        PROVOX Version 7.03 Documentation
+                             I. General Information
+        
+        PROVOX7 Program Files. The files for the PROVOX7 program are 
+        PROVOX7.EXE, PV7.EXE, and this document, PROVOX7.DOC. There are 
+        no command line arguments for PROVOX7.EXE; all command line 
+        arguments apply to the PV7.EXE program alone.
+        
+        Installation. To perform a manual installation, copy the files 
+        PROVOX7.EXE and PV7.EXE to your hard disk in a directory on the 
+        DOS path. You will want to be able to run PV7 from anywhere; 
+        PROVOX7 will be run only once, typically from within CONFIG.SYS 
+        or AUTOEXEC.BAT, and therefore it need not be on the command 
+        path. Place a line in the CONFIG.SYS file that looks like this:
+                         DEVICE=C:\WHEREVER\PROVOX7.EXE
+        substituting the name of the appropriate drive and directory for 
+        C:\WHEREVER. Next reboot the system and listen for the sound 
+        signature, three rising tones, as the PROVOX7 device driver 
+        successfully installs. Although installed, PROVOX7 will remain 
+        dormant until activated by the PV7 program. You may run PV7 from 
+        the DOS prompt, or place it in the AUTOEXEC.BAT file for 
+        automatic execution on system startup.
+        
+        The PV7 program accepts optional command line arguments to 
+        control PROVOX7, but one argument you must use is the name of the 
+        speech device. Commands of the following form are presently 
+        supported:
+                                   PV7 DECTALK
+                                    PV7 DTPC
+                                PV7 AUDAPTER LPT1
+                                PV7 LITETALK COM2
+                                    PV7 DTLT
+        
+        Every speech device is associated with a default output port. If 
+        the default output port is the one you wish to use, you may omit 
+        it from the PV7 command line. Caution: Not all devices support 
+        all ports, so read on. The following list gives the supported 
+        synthesizer names and their default output ports:
+        
+                                  ACCENT <LPT3>
+                                 AUDAPTER <COM1>
+                                   BNS <COM1>
+                                 BRLMATE <COM1>
+                            DECTALK <simulated COM4>
+                               DTLT <actual COM#.>
+                                   DTPC (none)
+                                 LITETALK <LPT1>
+                                 PORTTALK <LPT3>
+                                   PSS <COM1>
+        
+        For the DECTALK device, only the internal board is supported. For 
+        the DTLT device, the correct COM port will automatically be 
+        located if the device is turned on when PROVOX7 installs. For 
+        internal boards with drivers that simulate output ports such as 
+
+        the Accent PC and the Artic SynPhonix boards using Porttalk 
+        software, it is recommended that a simulated COM port be used 
+        instead of a simulated LPT port. If this is not possible, PROVOX7 
+        should not be installed as a device driver, but as a normal TSR 
+        program in the AUTOEXEC.BAT file instead. The command line to run 
+        PROVOX7 as a TSR should follow the command line to run the port 
+        emulation software. In that case both simulated LPT ports and 
+        simulated COM ports will work properly. The available output port 
+        choices are: LPT1, LPT2, LPT3, LPT4, COM1, COM2, COM3, COM4.
+        
+        When PROVOX7 is run it copies the existing contents of the screen 
+        to a buffer, including any text that may have preceded its own 
+        banner. It also saves any subsequent screen output while waiting 
+        to be activated by the PV7 program. When PV7 is run it checks to 
+        see whether PROVOX7 is a device driver or a memory resident TSR. 
+        If it is a device driver, PV7 writes the saved material to a file 
+        called PV7.LOG in the directory where PV7.EXE is located. You can 
+        examine this file to determine what was displayed on the screen 
+        before speech was activated. If PROVOX7 is a TSR program, PV7 
+        reads the saved information, but does not save it in a file. This 
+        makes it possible to run PROVOX7 and PV7 safely from a write-
+        protected diskette if necessary.
+        
+        At the present time the available PV7 commands in addition to the 
+        speech device name and output port are:
+                                    PV7 HELP
+                                    PV7 INIT
+                                    PV7 SAVE
+                                   PV7 RESTORE
+                                    PV7 QUIET
+                                    PV7 SPEAK
+                                   PV7 STATUS
+        Other PV7 commands may be added in future releases.
+        
+        Editing System Files. When adding the DEVICE= line to CONFIG.SYS,  
+        be sure to place it after the line that installs a memory manager 
+        such as QEMM or EMM386. This assures that the PROVOX7 device 
+        driver will be loaded high if possible by DOS MEMMAKER or a 
+        similar utility. When adding the PV7 startup command to 
+        AUTOEXEC.BAT, you should place it toward the end of the file so 
+        as to suppress the speaking of possibly lengthy startup messages 
+        from other system components. These messages will be written to 
+        the PV7.LOG file for later reference if you need them. If the PV7 
+        command precedes the PATH command within the AUTOEXEC.BAT file, 
+        you will have to include its location in the command like this:
+                            C:\WHEREVER\PV7 <device>
+        substituting the drive and directory name for c:\WHEREVER. Do not 
+        omit the extension .EXE from the DEVICE= command that references 
+        the PROVOX7 program. You may optionally include or omit such 
+        extensions from program names that are referenced in AUTOEXEC.BAT 
+        but they are required in CONFIG.SYS.
+        
+        The PV7 SAVE command can be used to store all the current 
+        settings of PROVOX7 for later recall with the PV7 RESTORE 
+        command. If the name of the speech synthesizer and the output 
+
+        port have been saved in this way, the AUTOEXEC.BAT file may 
+        contain a command like:
+                                   PV7 RESTORE
+        
+        The PV7 INIT command may be given at any time to re-initialize 
+        the speech device. The INIT function will occur automatically 
+        when exiting from Windows, or when using RESTORE or a device name 
+        or port name with the PV7 program.
+        
+                       II. PROVOX7 Commands and Features.
+        
+        Prefix Key. The Slash is the default Prefix key. You may change 
+        to the Accent key or to the Escape key by pressing Prefix Accent 
+        or Prefix Escape respectively. You may change back again by 
+        pressing Prefix Slash. To enter a real Slash, a real Accent, or a 
+        real Escape  when it is being used as the Prefix key, simply 
+        press the key twice in succession.
+        
+        Modes of Operation. PROVOX7 detects the presence of an enhanced 
+        keyboard and automatically selects Enhanced Mode if one is found. 
+        In enhanced mode the numeric keypad is used for PROVOX7 commands, 
+        and only the keys between the numeric keypad and the standard 
+        QWERTY keys control the PC cursor. The older Dual Mode (Direct 
+        mode and Review mode) is available by entering Prefix NumLock. To 
+        determine whether PROVOX7 is in Enhanced Mode or Dual Mode, 
+        simply press NumLock. If it says only "NUMLOCK" it is in Enhanced 
+        Mode. If it alternately says "NUMLOCK ON" and "NUMLOCK OFF" it is 
+        in Dual Mode. You cannot change the PC NumLock State in Enhanced 
+        Mode, although you may press a shift key to enter numbers there.
+        
+        Many notebook computers report having an enhanced keyboard even 
+        though they do not have a dual set of cursor keys. To use PROVOX7 
+        conveniently on such computers, while PROVOX7 is running turn off 
+        enhanced mode with Prefix NumLock, and use the PV7 SAVE command 
+        to record this change. You may then activate PROVOX7 from within 
+        the AUTOEXEC.BAT file with the PV7 RESTORE command and the normal 
+        Dual Mode operation will be available.
+        
+             Some of the following commands use a letter such as L or T. 
+        Either upper or lower case may be used to type them. Some 
+        commands use function keys. These are shown below as F1, F2, 
+        Shift F1, Shift F2, and so on. Still other commands use a 
+        punctuation mark or one or two digits. The name of the 
+        punctuation mark (e.g. Period or Equals) or the word Digit (or 
+        Digit Digit) are shown in the commands below. Finally, a few 
+        commands use a Control key in combination with another key. The 
+        word Control is used below to indicate that. When using Shift or 
+        Control, you may use either the left or the right key, and you 
+        must press it first, hold it down, then press the other key that 
+        goes with it, releasing them in either order. 
+        
+        Prefix Period -- Gives the cursor location. Column One Line One 
+        is the top left corner of the screen.
+        
+        Prefix L -- Reads the current line.
+
+        
+        Prefix T -- Gives the day of the week, the month, the day, and 
+        the time of day.
+        
+        Prefix C -- Names the current character.
+        
+        Prefix W -- Reads the current word.
+        
+        Prefix S -- Reads the entire screen.
+        
+        Prefix H -- Reads only the highlighted information in the 
+        selected subscreen. Follow the H with a letter, a digit, or a 
+        punctuation mark indicating the subscreen from which to read 
+        highlights; e.g. Prefix HS, Prefix HL, Prefix H+, Prefix H2, etc.
+        
+        Prefix G -- Grabs text from the screen and puts it onto the 
+        clipboard. The text from the review mode cursor to the end of the 
+        line is grabbed. Control characters and upper ASCII characters 
+        are replaced by spaces, and any leading or consecutive spaces are 
+        suppressed. Successive grabs put additional material onto the 
+        clipboard, up to a maximum of 512 characters. The count of 
+        characters in the clipboard is reported.
+        
+        Prefix K -- Adds a carriage return to the end of the clipboard. 
+        If the last character in the clipboard is already a carriage 
+        return, the clipboard is emptied. The count of characters in the 
+        clipboard is reported.
+        
+        Prefix P -- Pastes the clipboard data one character at a time 
+        onto the current screen by "stuffing the keyboard buffer." 
+        Pasting copies the data but does not remove it from the 
+        clipboard. This command is only valid in Direct Mode.
+        
+        Prefix R -- Reports yhow many seconds have elapsed since Provox7 
+        was run, or since the last Prefix Z command was used. 
+        
+        Prefix Z -- Resets the Prefix R count to zero.
+        
+        Prefix F Digit -- Reads only the information on the screen in a 
+        given Foreground attribute. The digit indicates the frequency of 
+        the foreground; 1 means the most common, 2 means the second most 
+        common, 3 means the third most common, etc.
+        
+        Prefix FF Digit -- Names the given Foreground attribute. The 
+        digit indicates the frequency of the foreground; 1 names the most 
+        common, 2 names the second most common, 3 names the third most 
+        common, etc.
+        
+        Prefix B Digit --  Reads only the information on the screen in a 
+        given Background attribute. The digit indicates the frequency of 
+        the Background; 1 means the most common, 2 means the second most 
+        common, 3 means the third most common, etc.
+        Prefix BB Digit --  Names the given Background attribute. The 
+        digit indicates the frequency of the Background; 1 names the most 
+        common, 2 names the second most common, 3 names the third most 
+
+        common, etc.
+        
+        Prefix Tab Digit -- Reads the information enclosed within the 
+        borders of a box on the screen. The digit indicates which of 
+        several possible boxes to read; 1 means the first box found, 2 
+        means the second box found, 3 means the third box found, etc.
+        
+        Prefix Tab Tab Digit --  Gives the location of the corners of a 
+        box on the screen. The digit indicates which of several possible 
+        boxes to locate; 1 locates the first box found, 2 locates the 
+        second box found, 3 locates the third box found, etc.
+        
+        Prefix N Digit -- Gives the name of the specified Screen Bank. 
+        Press Enter instead of a digit to get the name of the currently 
+        active Screen Bank.
+        
+        Prefix Question Digit -- Describes the location and filter 
+        settings of a specified subscreen within the currently active 
+        Screen Bank.
+        
+        Prefix Equals Digit -- Lets you define a specified subscreen 
+        within the currently active screenbank. This command uses corners 
+        which must be marked previously with Prefix Shift F3 and Prefix 
+        Shift F4.
+        
+        Prefix PgDn -- Begins to issue Down Arrow keystrokes at the rate 
+        of about one per second, for continuously reading a document 
+        while in a word processor, editor, or browser. The next key 
+        pressed, including other PROVOX commands, terminates the process.
+        
+        Prefix PrtSc -- Writes an ASCII file named PV######.TXT in the 
+        root directory of drive C: with the contents of the screen. The 
+        six # characters in the filename are replaced by two digits for 
+        the year, two for the month, and two for the day. The file is 
+        created if it does not already exist, and is appended to if it 
+        already exists.
+        
+        Prefix Shift PrtSc -- Writes a binary file named PV######.BIN in 
+        the root directory of drive C: with the exact contents of the 
+        screen. The six # characters in the filename are replaced by two 
+        digits for the year, two for the month, and two for the day. The 
+        file is created if it does not already exist, and is appended to 
+        if it already exists. While this file cannot be accessed with an 
+        ASCII editor or word processor, it can be examined with the DOS 
+        DEBUG command or a Hex Editor to inspect the character and 
+        attribute values in video memory.
+        
+        Prefix Scroll Lock -- Disables PROVOX and restores normal 
+        keyboard operation. PROVOX may be reactivated from a DOS prompt 
+        with the PV7 SPEAK command.
+        
+        Prefix E -- Activates the E-Mail Filter. When activated, most 
+        electronic mail address lines are written silently to the screen. 
+        For the most part, only the content of E-mail messages is 
+        directly spoken. Repeating the command closes the filter.
+
+        
+        Prefix O -- Activates OpenPort. The user is asked for the number 
+        of a COM Port to Open and may choose 1, 2, 3, or 4. If the 
+        selected port exists and is not in use by PROVOX7, it is opened 
+        and connected to the keyboard buffer. This feature permits 
+        uploading text files from such devices as Braille 'N Speak or the 
+        Kurzweil Reading Edge directly into a word processor. Start the 
+        word processor, press Prefix O, select the port number, and send 
+        the file. Press Prefix O again when finished to resume normal 
+        operation. You may then edit the file and save it as a document 
+        on your PC. When OpenPort is active and no data are being 
+        received, a reminder beep is heard every 14 seconds. You should 
+        try not to use the keyboard while data are being received, except 
+        to kill pending speech with ALT or CONTROL. These are the 
+        technical specifications: The port is set to 9600 BPS, eight data 
+        bits, no parity, one stop bit. Ports 1 and 3 use IRQ 4, while 
+        ports 2 and 4 use IRQ3. Hardware handshaking is implemented with 
+        RTS and CTS. 
+        
+        Prefix INS AnyKey -- Reports the ASCII value and the Scan Code of 
+        any key pressed after the Insert key.
+        
+        Prefix END -- Reads the lowest non-blank line of the screen 
+        without moving the PC cursor.
+        
+        Prefix Home -- Reads the highest non-blank line of the screen 
+        without moving the PC cursor.
+        
+        Prefix Left or Right Arrow -- Reads the character adjoining the 
+        current cursor position in the corresponding direction without 
+        changing the cursor location.
+        
+        Prefix Up or Down Arrow -- Reads the nearest non-blank line 
+        adjoining the current cursor position in the corresponding 
+        direction.
+        
+        Prefix Control Left or Control Right Arrow -- Reads the nearest 
+        word to the left or to the right of the current cursor position 
+        without changing its location.
+        
+        Prefix Star -- Names the current character, gives its location on 
+        the screen, and describes its foreground and background 
+        attributes.
+        
+        Prefix Digit -- Reads the contents of the specified subscreen 
+        within the active Screen Bank.
+        
+        Prefix Plus -- Reads the screen from the current line through the 
+        bottom line.
+        Prefix Dash -- Reads the screen from the top line through the 
+        current line.
+        
+        Prefix Less Than -- Reads the current line from the left end to 
+        the cursor position.
+        
+
+        Prefix Greater Than -- Reads the current line from the cursor 
+        position to the right end.
+        
+        Prefix F1 -- Reviews the meanings and current settings of the 
+        PROVOX7 Function Key commands.
+        
+        Prefix F2 -- Reports the current settings of keyboard lock keys 
+        and several other system features.
+        
+        Prefix F3 -- Controls the speaking of numbers; 0 means read whole 
+        numbers (123 = one hundred twenty three), 1 means read numbers 
+        digit by digit (123 = one two three).
+        
+        Prefix F4 -- Controls the speaking of capitalization; 0 means 
+        ignore capitalization, 1 means say the word CAP before every 
+        capital letter.
+        
+        Prefix F5 -- Controls the speaking of punctuation; 0 passes all 
+        data unmodified to the speech device; 1 pronounces only letters 
+        and digits; 2 pronounces letters, digits, punctuation marks, and 
+        spaces typed, but not spaces read from the screen; 3 pronounces 
+        everything.
+        
+        Prefix F6 Digit -- Reports and lets you set the Smart Screen 
+        level; 0 means no Smart Screen features, 1 means Auto Ignore one 
+        or two specific subscreens, 2 means Auto Alert a specific 
+        subscreen, 3 means read all minor background data, 4 means read 
+        only the least common background data, 5 means read all minor 
+        foreground data, and 6 means read only the least common 
+        foreground data. Settings larger than one also automatically read 
+        Pop Up boxes when they first appear, when their contents change,  
+        or when they change position on the screen.
+        
+        Prefix F7 -- Sets the Keyboard Echo level; 0 means do not echo 
+        keystrokes, 1 means echo each keystroke and kill all waiting 
+        speech, 2 means wait for words to form before echoing keystrokes 
+        (useful in online chat mode).
+        
+        Prefix F8 -- Sets the Screen Echo level; 0 means do not echo 
+        screen data, 1 means echo screen data when detected, 2 means wait 
+        for words to form before echoing screen data (useful in online 
+        chat mode).
+        
+        Prefix F9 -- Sets speech synthesizer speed.
+        
+        Prefix F10 -- Sets speech synthesizer volume.
+        
+        Prefix Shift F1 -- Reviews the meanings and current settings of 
+        the PROVOX Shift Function Key commands.
+        
+        Prefix Shift F2 -- Offers a menu of options to change speech 
+        parameters and subscreen assignments for Auto Alert and Auto 
+        Ignore.
+        
+        Prefix Shift F3 -- Marks one diagonal corner of a screen area 
+
+        using the review cursor location, for later use with the Prefix 
+        Equals command.
+        
+        Prefix Shift F4 -- Marks the other diagonal corner of a screen 
+        area using the review cursor location, for later use with the 
+        Prefix Equals command.
+        
+        Prefix Shift F5 Digit -- Selects a Screen Bank to be loaded; a 
+        digit from 0 to 9 identifies the Screen Bank.
+        
+        Prefix Shift F6 Digit -- Selects a Screen Bank to be saved; a 
+        digit from 0 to 9 identifies the Screen Bank.
+        
+        Prefix Shift F9 Digit Digit -- Reports and/or resets the screen 
+        column where an audible margin beep is produced on keyboard 
+        input.
+        
+        Prefix Shift F10 Digit -- Reports and/or resets the WatchDog 
+        Threshold.
+        
+        The following commands use keys on the Numeric Keypad. They do 
+        not use the usual PROVOX7 Prefix key. If you are using an 
+        application that requires a Keypad key for one of its commands, 
+        you may enter it by first pressing the Keypad Slash, then the 
+        desired key. This lets you "escape" from the Enhanced Mode for 
+        that single entry.
+        
+        Keypad Period -- Reports the current PROVOX7 Review Cursor 
+        location.
+        
+        Keypad Enter -- Moves the PROVOX7 Review Cursor to the location 
+        of the PC System Cursor.
+        
+        Keypad Control Enter --Moves the PC System Cursor to the location 
+        of the PROVOX7 Review Cursor if possible, by issuing a series of 
+        Left, Right, Up, or Down Arrow keystrokes. You need to be running 
+        an appropriate application to use this "cursor routing" feature, 
+        since DOS generally does not recognize arrow keys directly.
+        
+        Keypad Plus --Reads the contents of the line where the PROVOX7 
+        Review Cursor resides.
+        
+        Keypad Dash -- Reads the word where the PROVOX Review7 Cursor 
+        resides.
+        
+        Keypad Star -- Names the character where the PROVOX7 Review 
+        Cursor resides, gives its screen location, and describes its 
+        attributes.
+        
+        Keypad Slash -- Permits the next character typed to escape from 
+        PROVOX7 and be sent directly to the application.
+        
+        Keypad NumLock -- Does nothing in Enhanced Mode; changes NumLock 
+        State in Dual (Direct and Review) Mode.
+        
+
+        Keypad Left, Right, Up, or Down Arrow -- Moves the PROVOX7 Review 
+        Cursor in the corresponding direction.
+        
+        Keypad Home, End, PgUp, or PgDn -- Moves the PROVOX7 Review 
+        Cursor to the corresponding edges or corners of the screen.
+        
+        Keypad Center Key -- Names the character at the location of the 
+        PROVOX7 Review Cursor; every other press of this key on the same 
+        character gives its phonetic pronunciation.
+        
+        Keypad INS -- Permits entering a Scan Target to search for on the 
+        screen.
+        
+        Keypad Digit Digit -- Moves to the left end of the specified 
+        screen line and reads its contents. To enter a digit on the 
+        Keypad in Enhanced Mode, press a Shift key together with the 
+        desired number.
+        
+        Keypad Control Left or Control Right Arrow -- Moves the PROVOX7 
+        Review Cursor to the previous word or to the next word on the 
+        screen and reads it.
+        
+        Keypad Control Home or Control End -- Searches the screen 
+        backward or forward for the specified Scan Target.
+        
+        Keypad Control PgUp or Control PgDn -- Searches the screen 
+        backward or forward for the next encountered change of screen 
+        attribute and reports it.
+        
+                         III. Automatic PROVOX Features
+        
+        The PROVOX7 program has several features that operate without 
+        explicit commands to invoke them. Some of them are described in 
+        the following paragraphs.
+        
+        Screen Size Settings. If the video display adapter on your PC is 
+        EGA or VGA, the screen may be set to display 43 or 50 lines of 
+        text instead of the usual 25. PROVOX7 automatically recognizes 
+        this setting and adapts to the larger screen sizes. While some 
+        screen readers use a letter from "A" to "Y" to refer to the 25 
+        lines of the standard screen, PROVOX7 uses a two digit number and 
+        therefore adapts easily to larger displays. The screen capture 
+        commands and those that refer to the bottom line of the screen 
+        also adapt automatically to these settings.
+        
+        ScreenBank Switching. Every time you press the ENTER key, PROVOX7 
+        examines the current screen line to the left of the cursor to 
+        determine if you have just entered a DOS command that matches one 
+        of its ten ScreenBank names. If a match is found, the ScreenBank 
+        is activated and the word SCREENBANK is spoken. If several 
+        seconds pass without pressing any keys this matching process is 
+        also attempted, so that when returning to a DOS prompt PROVOX7 
+        can restore its original ScreenBank settings. For this feature to 
+        work properly, three things are required:
+        
+
+        (1) you must be using the default DOS prompt, usually achieved by 
+        placing "PROMPT $P$G" in the AUTOEXEC.BAT file. 
+        
+        (2) the ScreenBank names must include an initial GreaterThan 
+        character, such as >WP, >FIRST, or >PROCOMM.
+        
+        (3) when typing a DOS command there must be no space between the 
+        GreaterThan of the DOS prompt and the first letter of the command 
+        name.
+        
+        Microsoft Windows Watch. If PROVOX7 is installed on a PC which 
+        runs Windows under DOS, it will detect and report the onset and 
+        the termination of Windows execution, and return to normal 
+        performance after Windows terminates. The Windows version is also 
+        reported.
+        
+        Enhanced Text Parsing. While PROVOX7 leaves most of the text to 
+        speech translation to the synthesizer device being used, two 
+        additional steps in the process are performed by PROVOX7 
+        automatically. First, radio amateur call signs are always 
+        spelled. An amateur call sign is recognized if it has a one or 
+        two letter prefix, a single digit in the middle, and a one to 
+        three letter suffix. Second, mixed case words in which a capital 
+        letter follows a lower case letter are divided into parts at that 
+        point. Thus the words dBASE, GetS, and cRun will all be spoken as 
+        two syllable words.
+        
+        Caps Lock Monitor. When the keyboard Caps Lock is off and you 
+        press a shifted letter key the PC recognizes an upper case 
+        letter. When Caps Lock is on and you do that, it recognizes a 
+        lower case letter instead of an upper case one. Since it is 
+        extremely easy to forget that Caps Lock is on, or to turn it on 
+        accidentally, PROVOX7 issues a warning beep if you enter a 
+        shifted letter while the Caps Lock is on. Maybe that was what you 
+        wanted, or maybe your life or reputation has just been saved.
+        
+        Repetition Counter. When either a single character or a pair of 
+        characters is repeated more than three times in succession, 
+        PROVOX7 says only the first three instances. It then waits until 
+        the sequence is broken, then gives the repeat count.
+        
+        Buffer Overflow. PROVOX7 maintains a large buffer in which to 
+        accumulate text to be spoken. If this buffer becomes full, 
+        PROVOX7 gives an audible warning tone and then empties the 
+        buffer. The information waiting to be spoken is lost, but you are 
+        alerted and the PC is not delayed.
+        
+        Blank Lines. PROVOX7 says the word BLANK when it encounters a 
+        blank line while reading the screen.
+        
+                              Terms And Conditions
+        
+        This program is free software; you can redistribute it and/or 
+        modify it under the terms of the GNU General Public License as 
+        published by the Free Software Foundation; either version 2 of 
+
+        the License, or (at your option) any later version.
+        
+        This program is distributed in the hope that it will be useful, 
+        but WITHOUT ANY WARRANTY; without even the implied warranty of 
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+        General Public License for more details. You should have received 
+        a copy of the GNU General Public License along with this program; 
+        if not, write to the Free Software Foundation, Inc., 675 Mass 
+        Ave, Cambridge, MA 02139, USA.
+        
+                      Author: Charles E. Hallenbeck, Ph.D.
+                                  439 Union St.
+                                Hudson, NY 12534
+                            Email: chuckh@taconic.net
+                        Web site: www.taconic.net/chuckh
+        

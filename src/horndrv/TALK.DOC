@@ -1,0 +1,1085 @@
+							                                     10-Oct-1995
+
+    Introduction
+    =========================================================================
+
+    The device driver was originally written in 1992 over a three month
+    period.
+
+    The computer I wrote this driver on was a vintage 1987 "Profound" AT
+    clone, clock speed at about 8Mhz. The computer currently resides in bit
+    heaven.
+
+    The program was written entirely in "C", compiled using Borland's
+    Turbo-C++ V3.0 compiler (1992) with an assembly language interface stub
+    to the Dos Operating System.
+
+    As the Borland environment does not include a standalone assembler I've
+    used a public domain assembler used to assemble an 80286 assembly source
+    interface stub, and linked together the objects using Borland's project
+    file facility.
+
+    The software was archived and kept on my bookshelf for two and a half
+    years. Recently I began surfing the net and noticed people wanted text
+    to speech software so I humbly submit this as yet another example of
+    such software. My code is a plagiarists paradise of other peoples
+    endeavors, ideas and articles all in the public domain. In no way do
+    I consider the driver solely my invention, I had scavenged BBS looking
+    for appropriate source!
+
+    The driver enclosed is a poor mans voice simulation for the ENGLISH
+    language. The quality of the output is rather poor, perhaps because I've
+    played a bit with the English to Phoneme Translator table. It is a
+    general purpose text to speech driver that enables DOS to speak text
+    that is presented via the DOS driver interface.
+
+    This implementation will only work with the certain loudspeakers generally
+    those found in desktop or tower computers with a built in loud speaker.
+
+    I made this a general purpose text to speech driver for two reasons.
+    Firstly to minimize memory usage and secondly to ignore decisions like,
+    "what is the contextual meaning of this sentence"? And how should I
+    interpret the token streams in that sentence!
+
+    The driver can be customized as I've included a phoneme to speech
+    interface. (See the driver switches)
+
+    The reason for developing this program was fourfold:
+
+    1. This driver adds an extra dimension to the man-machine interface
+    2. I wanted a CHEAP means of reproducing speech easily for ANY program
+       that I write in the future
+    3. It should run with no extra hardware support apart from that found
+       on a standard AT-Style non-portable computer.
+    4. Practice writing loadable device drivers with some potentially useful
+       practical benefit for other programmers or computer users.
+
+
+    Files included in the distribution
+    ==================================
+
+    talk.doc        31953  23-10-95   1:52   Driver Documentation
+    talk.sys        32560  23-10-95   1:10   Talking device Driver
+    tstdrv.c         1449  23-19-95   1:46   Test Program source
+    tstdrv.com       8912  23-10-95   1:56   Test Program executable
+    words            8398  13-10-92   1:03   Test Program data file
+
+
+    The driver is made up of two user attachable subsystems. There is
+    the English text subsystem that translates English text to phonemes and
+    a phoneme subsystem that "speaks" the phonemes to the PC speaker.
+    The English subsystem can be reached by opening the file $talk$. The
+    phoneme subsystem can be reached by opening the file $phonem$.
+
+    Installation
+    =========================================================================
+
+
+    The minimum hardware to load the driver on is a 80286 8Mhz AT clone PC.
+
+    The driver should be included in the CONFIG.SYS file with the DEVICE
+    statement.
+
+    DEVICE=TALK.SYS {switches}
+
+    where the switches are:
+
+    -d{num} Set the DMA rate which bits are strobed out (Default: System's)
+    -i      Disable Interrupts during speech            (Default: Enabled)
+    -t      Programmers trace mode
+    -q      Quiet no initialization messages please     (Default: Not Quiet)
+
+    For example is quiet boot:
+
+        DEVICE=TALK.SYS -q
+
+
+    Once the system is rebooted and the driver is loaded in you should see
+    the following message come up on the screen assuming your not in quiet
+    mode.
+
+                Text To Speech Device Driver
+                Written by Jon Hornstein
+                Melbourne, Australia
+                Ver 0.5, Oct 16 1995
+
+    How to use the Driver
+    =========================================================================
+    The device works like any Read/Write file stream. If we copy a file to
+    the device driver the file is spoken by DOS. Character drivers receive
+    data one character at a time from DOS. As the character is received it
+    is converted to uppercase so the user can consider the data as case
+    insensitive.
+
+    There are two subsystems set up as filenames on the DOS file system.
+    The files are called $TALK$ and $PHONEM$. Sending data to the $TALK$
+    subsystem will cause the data to be interpreted as English. To read the
+    translations to phonemes READ the data from the $TALK$ subsystem.
+    The phoneme subsystem has no feed back except via the speaker.
+
+                    echo 123>$talk$
+
+                    type $talk$
+                    -W-UH-N- -T-OO- -TH-R-EE- - -
+
+                    type $phonem$
+                    Read error on device $PHONEM$
+                    R(etry), I(gnore), F(ail), or A(bort)?
+
+
+                    copy {file} $talk$
+
+                    type {file} >$talk$
+
+                    echo 12345.56 >$talk$
+
+              or to the phoneme subsystem
+
+                    echo w-uh-n   t-oo   h-eh-l-oh-w>$phonem$
+
+              you can do the following but this leads to "infinite" loops of
+              talking interruptible only with a <CTRL>C. The "hello there"
+              is converted to phonemes which is in turn is typed then
+              directed back into the $talk$ read buffer which is in turn
+              sent to the phoneme device which in turn is directed back
+              into the $talk$ read buffer.
+
+                    echo hello there >$talk$
+                    type $talk$>$phonem$
+
+    Under program control the programmer can open the driver like a normal
+    file. The "C" code fragment below illustrates this point.
+
+    -----------------------------cut here--------------------------
+    #include <stdio.h>
+
+    int main(void)
+    {
+    FILE *pTalkFile;
+
+	    if((pTalkFile = fopen("$talk$", "r+")) != NULL)
+	    {
+	        /*
+	         * Note the \n or LF character implies end of token
+	         */
+	        fprintf(pTalkFile, "Hello there\n");
+	        fclose(pTalkFile);
+	    }
+	    return(pTalkFile == NULL);
+    }
+    -----------------------------cut here--------------------------
+
+
+    Phonemes generated from the phoneme layer of the software is put into a
+    128 byte buffer able to be viewed as the output from the driver.
+
+             type $talk$
+
+             or
+
+             copy $talk$ con:
+
+    There is a driver exerciser that takes a set of words and speaks them.
+
+    To execute the test program type:
+
+          tstdrv words
+
+    The source for the test program had been included.
+
+
+    Some notes about the implementation
+    =========================================================================
+
+    The driver works independently from the speed of the CPU clock rate.
+    The driver stores variable sized data tables called "Phoneme Sound
+    Tables" that can reproduce speech by sending the data to the PC speaker.
+    Stringing together the phonemes produces speech.
+
+    To achieve CPU timing independence the phoneme sound table synchs
+    each bit to the DMA memory refresh flag on port 0x61 bit 4. Every time
+    a DMA memory refresh occurs the driver strobes a bit to the loudspeaker.
+
+    The following code fragment can alter the rate at which the DMA memory
+    refresh occurs. Faster rate will generate a higher pitch and a lower rate
+    will lower the pitch. There is a switch on the DEVICE line that will allow
+    the rate to alter.
+
+    I've noted that the DMA rate counter is set to 18, hence 18 input to the
+    command line for the program below will reproduce acceptable speech.
+
+    -----------------------------cut here--------------------------
+    #include <dos.h>
+    #include <stdlib.h>
+
+    void main(int argc, char **argv)
+    {
+	    if(argc == 2)
+	    {
+	        outportb(0x43, 0x46);       // Latch the DRAM DMA refresh counter
+	        outportb(0x41, atoi(argv[1])); // Set the counter
+	    }
+    }
+    -----------------------------cut here--------------------------
+
+
+    Every time a new "token" is spoken the speech subsystem will turn
+    off the speaker oscillations by using the Turbo C "nosound" function.
+    Tokens are groups of alpha characters or individual "other" characters
+    up to 50 characters long.
+
+
+
+    Grammer for a tokens:
+
+                 #-----<--------#
+                 |              |
+           ->----#--[ALPHA]--->-#--#-->
+                 |                 |
+                 #--[DIGIT]--->----#
+                 |                 |
+                 #--[OTHER]--------#
+
+
+    As well as the existing space characters I insert a pause between each
+    token.
+
+    Some control characters are not spoken, that's the nature of trying to
+    please everyone. Because this is a text -> speech program symbols that
+    I didn't consider appropriate text are filtered and not spoken.
+
+    In this drivers implementation I kept interrupts enabled. I wanted to
+    keep the interference with the rest of the system to a minimum. A switch
+    is available to disable interrupts if other tasks are interfering with
+    the speech.
+
+    I'm sorry for taking up 32 Kbytes.
+
+    3  bytes was used for the output phoneme buffer
+    128 bytes was used for the output ring buffer for phoneme output
+    50 bytes Token size
+    200 bytes of stack
+
+    The driver is built up of three subsystems:
+
+     1. DOS operating system interface
+     2. English to Phoneme translator
+     3. Phoneme to sound translator
+
+
+
+    1. The code for the interface to the DOS Operating System was based upon
+       a "C User Journal" articles about writing device drivers, which I may
+       further add regarding this publication, I believe it is the most
+       important popular journal of it's type on the market for profession
+       C coders.
+
+       The assembly interface was taken from "Tech Specialist", September
+       1991 an article by Larry Weaver, with a little massage to get it to
+       work with Turbo-C
+
+
+    2. The English to Phoneme Translator tables adapted for my driver was
+       taken from the TRAN program which was written by Stephen Neely.
+       He states in his documentation:
+
+	   Most of the speech-to-text rules used in the tran program come
+	   from an article in an IEEE journal:
+
+	   Elovitz, H.S., Johnson, R., McHugh, A., and Shore, J.E.  (1976).
+	   "Letter-to-Sound Rules for Automatic Translation of English Text
+	   to Phonetics," IEEE Transactions on Acoustics, Speech, and Signal
+	   Processing, Vol.  ASSP-24(6), 446-458.
+
+
+
+    3. The Phoneme to Sound subsystem which is made up of phoneme tables and
+       code that transfers the table data to the speaker. The table data
+       was converted from N. Spieth's PASCAL source program TSPEECH.
+       The relevant code was translated into my preferred language "C" and
+       incorporated into initially a Phoneme Device Driver.
+
+       The timing for the loudspeaker up to a 30 microsecond resolution was
+       accomplished by using the ideas expoused from BYTE magazine Vol. 12,
+       No. 12 1987 "Inside the IBM PC's", extra edition the article by
+       Cohen & Hanel.
+
+
+
+
+    The reason why I submitting the driver at a very primitive stage without
+    further investigation into possibilities of further improving the speech
+    or the code was frankly I've better thing to do with my time than sit at
+    a computer terminal day and night!
+
+    In my own opinion the speech is rather primitive compared to sound card
+    text to speech reproduction that I've heard. To get a better quality I
+    need a different approach to the speech generation. Either superior
+    phoneme tables or one of the many other ways of simulating the human
+    voice organs via mathematical simulation.
+
+    Currently the version of the driver is 0.5 being that as FREEWARE
+    software, I do not guarantee that it is fully bug free and hence always
+    in maintenance beta mode. I MAY resubmit this driver again
+    if I could obtain a better set of phonemes to work from or the removal
+    of any obvious software bugs.
+
+    As an aside I wanted to compress the phoneme tables but at this stage
+    haven't seen a way to significantly save space with any of the normal
+    compression schemes. I only got minor saving of space not warranting
+    more large code capsules to be included in the driver.
+
+
+
+    Internationalization
+    =========================================================================
+
+    As you may have noticed this was written by an Australian. We spell
+    and talk differently from the rest of the English speaking world. I
+    make no apologies the country settings I generally use is 061. i.e.
+    COUNTRY=061.
+
+    Our currency is expressed in dollars and our codepages reflect a
+    more Americana presentation. When I changed English to Phoneme
+    Translation Tables I would err on the side that would be pleasant
+    and soothing to Australian ears.
+
+
+    Appendix
+    =========================================================================
+
+    The following List is the list of available phonemes. Slighly extended
+    from Andy McGuire set of phonemes.
+
+
+    "A"                       "B"                        "C"
+    "D"                       "E"                        "F"
+    "G"                       "H"                        "J"
+    "K"                       "L"                        "M"
+    "N"                       "O"                        "P"
+    "R"                       "S"                        "T"
+    "U"                       "V"                        "W"
+    "Y"                       "Z"
+
+    "AW"                      "AH"                       "UH"
+    "AE"                      "OH"                       "EH"
+    "OO"                      "IH"                       "EE"
+    "WH"                      "CH"                       "SH"
+    "TZ"                      "TH"                       "ZH"
+
+
+    The following string table is the grammar that constitute English to
+    phoneme conversion. This is based upon Thom Henderson's TRAN program.
+
+  "text found / Text before text found / Text after  text found/ phoneme"
+
+
+
+    " /// "
+
+    "A// /UH"
+    "ARE/ / /AH-R"
+    "AR/ /O/UH-R"
+    "AR//#/EH-R"
+    "AS/ ^/#/AE-A-S"
+    "A//WA/UH"
+    "AW///AW"
+    "ANY/ ://EH-N-EE"
+    "A//^+#/AE-A"
+    "ALLY/#://UH-L-EE"
+    "AL/ /#/UH-L"
+    "AGAIN///UH-G-EH-N"
+    "AG/#:/E/IH-J"
+    "A//^+:#/AE"
+    "A/ :/^+/AE-A"
+    "ARR/ //UH-R"
+    "ARR///AE-R"
+    "AR/ ://AH-R"
+    "AR// /AE-R"
+    "AR///AH-R"
+    "AIR///EH-R"
+    "AI///AE-A"
+    "AY///AE-A"
+    "AU///AW"
+    "AL/#:/ /UH-L"
+    "ALS/#:/ /UH-L-Z"
+    "ALK///AW-K"
+    "AL//^/AW-L"
+    "ABLE/ ://AE-A-B-UH-L"
+    "ABLE///UH-B-UH-L"
+    "ANG//+/AE-A-N-J"
+    "ATHE/ C/ /AE-TH-EE"
+    "A//A/AH"
+    "A///AE"
+
+    "BE/ /^#/B-IH"
+    "BEING///B-EE-IH-N"
+    "BOTH/ / /B-OH-TH"
+    "BUS/ /#/B-IH-Z"
+    "BUIL///B-IH-L"
+    "B/ / /B-EE"
+    "B///B"
+
+    "CH/ /^/K"
+    "CH/^E//K"
+    "CH///CH"
+    "CI/ S/#/S-AH-EE"
+    "CI//A/SH"
+    "CI//O/SH"
+    "CI//EN/SH"
+    "C//+/S"
+    "CK///K"
+    "COM//%/K-AH-M"
+    "C/ / /S-EE"
+    "C///K"
+
+    "DED/#:/ /D-IH-D"
+    "D/.E/ /D"
+    "D/#^:E/ /T"
+    "DE/ /^#/D-IH"
+    "DO/ / /D-OO"
+    "DOES/ //D-UH-Z"
+    "DOING/ //D-OO-IH-N"
+    "DOW/ //D-OH"
+    "DU//A/J-OO"
+    "D/ / /D-EE"
+    "DOUGH///D-OH"
+    "D///D"
+
+    "E/#:/ /"
+    "E/'^:/ /"
+    "E/ :/ /EE"
+    "ED/#/ /D"
+    "E/#:/D /"
+    "ER//EV/EH-V"
+    "EVEN/ EL//EH-V-EH-N"
+    "EVEN/ S//EH-V-EH-N"
+    "E//^%/EE"
+    "E//PH%/EE"
+    "ERI//#/EE-R-EE"
+    "ER/#:/#/AE-R"
+    "ER//#/EH-R"
+    "ER///AE-R"
+    "EVEN/ //EE-V-EH-N"
+    "E/#:/W/"
+    "EW/@//OO"
+    "EW///Y-OO"
+    "E//O/EE"
+    "ES/#:&/ /IH-Z"
+    "E/#:/S /"
+    "ELY/#://L-EE"
+    "EMENT/#://M-EH-N-T"
+    "EFUL///F-U-L"
+    "EE///EE"
+    "EARN///AE-R-N"
+    "EAR/ /^/AE-R"
+    "EAD///EH-D"
+    "EA/#:/ /EE-UH"
+    "EA//SU/EH"
+    "EA///EE"
+    "EIGH///AE-A"
+    "EI///EE"
+    "EYE/ //AH-EE"
+    "EY///EE"
+    "EU///Y-OO"
+    "E/ / /EE"
+    "E/^/ /"
+    "E///EH"
+
+    "FUL///F-U-L"
+    "F/F//"
+    "F/ / /EH-F"
+    "F///F"
+
+    "GIV///G-IH-V"
+    "G/ /I^/G"
+    "GE//T/G-EH"
+    "GGES/SU//G-J-EH-SS"
+    "G/G//"
+    "G/ B#//G"
+    "G//+/J"
+    "GREAT///G-R-AE-A-T"
+    "GH/#//"
+    "G/ / /G-EE"
+    "G///G"
+
+    "HAV/ //H-AE-V"
+    "HERE/ //H-EE-R"
+    "HOUR/ //OH-AE-R"
+    "HOW///H-OH"
+    "H//#/H"
+    "H/ / /H-AE-CH"
+    "H///"
+
+    "IN/ //IH-N"
+    "I/ / /AH-EE"
+    "IN//D/IH-N"
+    "IER///EE-AE-R"
+    "IED/#:R//EE-D"
+    "IED// /AH-EE-D"
+    "IEN///EE-EH-N"
+    "IE//T/AH-EE-EH"
+    "I/ :/%/AH-EE"
+    "I//%/EE"
+    "IE///EE"
+    "INE/N//AH-EE-N"
+    "IME/T//AH-EE-M"
+    "I//^+:#/IH"
+    "IR//#/AH-EE-R"
+    "IS//%/AH-EE-S"
+    "IX//%/IH-K-S"
+    "IZ//%/AH-EE-Z"
+    "I//D%/AH-EE"
+    "I/+^/^+/IH"
+    "I//T%/AH-EE"
+    "I/#^:/^+/IH"
+    "I//^+/AH-EE"
+    "IR///AE-R"
+    "IGH///AH-EE"
+    "ILD///AH-EE-L-D"
+    "IGN// /AH-EE-N"
+    "IGN//^/AH-EE-N"
+    "IGN//%/AH-EE-N"
+    "IQUE///EE-K"
+    "I///IH"
+
+    "J/ / /J-A-EE"
+    "J///J"
+
+
+    "K//N/"
+    "K/ / /K-A-EE"
+    "K///K"
+
+    "LO//C#/L-OH"
+    "L/L//"
+    "L/#^:/%/UH-L"
+    "LEAD///L-EE-D"
+    "L/ / /AE-L"
+    "L///L"
+
+    "MOV///M-OO-V"
+    "M/ / /EH-M"
+    "M///M"
+
+    "NG/E/+/N-J"
+    "NG//R/N"
+    "NG//#/N"
+    "NGL//%/N-UH-L"
+    "NG///N"
+    "NK///N-K"
+    "NOW/ / /N-OH"
+    "N/ / /EH-N"
+    "N/N//"
+    "N///N"
+
+    "OF// /UH-V"
+    "OROUGH///AE-R-OH"
+    "OR/ F/TY/OH-R"
+    "OR/#:/ /AE-R"
+    "ORS/#:/ /AE-R-Z"
+    "OR///AW-R"
+    "ONE/ //W-UH-N"
+    "OW//EL/OH"
+    "OW///OH"
+    "OVER/ //OH-V-AE-R"
+    "OV///UH-V"
+    "O//^%/OH"
+    "O//^EN/OH"
+    "O//^I#/OH"
+    "OL//D/OH-L"
+    "OUGHT///AH-T"
+    "OUGH///UH-F"
+    "OU/ /^L/UH"
+    "OU/ //OH"
+    "OU/H/S#/OH"
+    "OUS///UH-S"
+    "OUR/ F//OH-R"
+    "OUR///AW-R"
+    "OUD///U-D"
+    "OUP///OO-P"
+    "OU///OH"
+    "OY///AW-EE"
+    "OING///OH-IH-N"
+    "OI///AW-EE"
+    "OOR///OH-R"
+    "OOK///U-K"
+    "OOD///U-D"
+    "OO///OO"
+    "O//E/OH"
+    "O// /OH"
+    "OA// /OH"
+    "ONLY/ //OH-N-L-EE"
+    "ONCE/ //W-UH-N-S"
+    "ON'T// /OH-N-T"
+    "O/C/N/AH"
+    "O//NG/AH"
+    "O/^:/N/UH"
+    "ON/I//UH-N"
+    "ON/#:/ /UH-N"
+    "ON/#^//UH-N"
+    "O//ST /OH"
+    "OF//^/AW-F"
+    "OTHER///UH-TH-AE-R"
+    "OSS// /AW-S"
+    "OM/#^:/ /UH-M"
+    "O///AH"
+
+    "PH///F"
+    "PEOP///P-EE-P"
+    "POW///P-OH"
+    "PUT// /P-U-T"
+    "P/ / /P-EE"
+    "P/P//"
+    "P///P"
+
+    "QUAR///K-W-AW-R"
+    "QU/ //K-W"
+    "QU///K"
+    "Q/ / /K-OO"
+    "Q///K"
+
+    "RE/ /^#/R-EE"
+    "R/ / /AH"
+    "R/R//"
+    "R///R"
+
+    "SH///SH"
+    "SION/#//ZH-UH-N"
+    "SOME///S-AH-M"
+    "SUR/#/#/ZH-AE-R"
+    "SUR//#/SH-AE-R"
+    "SU/#/#/ZH-OO"
+    "SSU/#/#/SH-OO"
+    "SED/#/ /Z-D"
+    "S/#/#/Z"
+    "SAID///S-EH-D"
+    "SION/^//SH-UH-N"
+    "S/S//"
+    "S/./ /Z"
+    "S/#:.E/ /Z"
+    "S/#^:##/ /Z"
+    "S/#^:#/ /S"
+    "S/U/ /S"
+    "S/ :#/ /Z"
+    "SCH/ //S-K"
+    "S//C+/"
+    "SM/#//Z-M"
+    "SN/#/ /Z-UH-N"
+    "S/ / /EH-S"
+    "S///S"
+
+    "THE/ / /TH-UH"
+    "TO// /T-OO"
+    "THAT///TH-AE-T"
+    "THIS/ / /TH-IH-S"
+    "THEY/ //TH-AE-A"
+    "THERE/ //TH-EH-R"
+    "THER///TH-AE-R"
+    "THEIR///TH-EH-EH"
+    "THAN/ / /TH-AE-N"
+    "THEM/ / /TH-EH-M"
+    "THESE// /TH-EE-Z"
+    "THEN/ //TH-EH-N"
+    "THROUGH///TH-R-OO"
+    "THOSE///TH-OH-Z"
+    "THOUGH// /TH-OH"
+    "THUS/ //TH-UH-S"
+    "TH///TH"
+    "TED/#:/ /T-IH-D"
+    "TI/S/#N/CH"
+    "TI//O/SH"
+    "TI//A/T"
+    "TIEN///SH-UH-N"
+    "TUR//#/CH-AE-R"
+    "TU//A/CH-OO"
+    "TWO/ //T-OO"
+    "T/ / /T-EE"
+    "T/T//"
+    "T///T"
+
+    "UN/ /I/Y-OO-N"
+    "UN/ //UH-N"
+    "UPON/ //UH-P-AW-N"
+    "UR/@/#/AE-R"
+    "UR//#/Y-AE-R"
+    "UR///AE-R"
+    "U//^ /UH"
+    "U//^^/UH"
+    "UY///AH-EE"
+    "U/ G/#/"
+    "U/G/%/"
+    "U/G/#/W"
+    "U/#N//Y-OO"
+    "UI/@//OO"
+    "U/@//UH"
+    "U///Y-OO"
+
+    "VIEW///V-Y-OO"
+    "V/ / /V-EE"
+    "V///V"
+
+    "WHERE/ //W-AE-R"
+    "WA//S/W-AH"
+    "WA//T/W-AH"
+    "WHERE///WH-EH-R"
+    "WHAT///WH-AH-T"
+    "WHOL///H-OH-L"
+    "WHO///H-OO"
+    "WH///WH"
+    "WAR///W-AH-R"
+    "WOR///W-AE-R"
+    "WR///R"
+    "W/ / /D-AH-B-L-Y-OO"
+    "W///W"
+
+    "X//^/EH-K-S"
+    "X/ / /EH-K-S"
+    "X/ /#/Z-EH"
+    "X///K-S"
+
+    "YOUNG///Y-UH-N"
+    "YOU/ //Y-OO"
+    "YES/ //Y-EH-S"
+    "Y/ / /WH-UH-Y"
+    "Y/ //Y"
+    "Y/#^:/ /EE"
+    "Y/#^:/I/EE"
+    "Y/ :/ /AH-EE"
+    "Y/ :/#/AH-EE"
+    "Y/ :/^+:#/IH"
+    "Y/ :/^#/AH-EE"
+    "Y///IH"
+
+    "ZZ///T-Z"
+    "Z/ / /Z-EH-D"
+    "Z///Z"
+
+
+
+    The following documentation was borrowed from Thom Henderson's say
+    program. It is based on Andy McGuire's "SPEECH" program so I will save
+    my effort by reproducing it in parts here:
+
+
+SPEECH supports thirty six phonemes, which are specified as one or two
+character codes, as follows:
+
+	a       f       n       tz
+	ae      g       oh      u
+	ah      h       oo      uh
+	aw      i       p       v
+	b       ih      r       w
+	ch      j       s       wh
+	d       k       sh      y
+	ee      l       t       z
+	eh      m       th      zh
+
+Phonemes may be given in either upper case or lower case.  Phonemes are
+separated with a dash.  Words are separated with a space.  For
+example, to say "this is a test", you would type:
+
+    say tz-ih-s ih-z ah t-eh-s-t-t
+
+
+Some common words are defined below.
+
+
+Cardinal numbers:
+
+    0                   z-ee-r-oh
+    1                   w-uh-n
+    2                   t-oo
+    3                   th-r-ee
+    4                   f-oh-r
+    5                   f-i-v
+    6                   s-ih-k-s
+    7                   s-eh-v-eh-n
+    8                   a-a-t
+    9                   n-i-n
+    10                  t-eh-n
+    11                  eh-l-eh-v-uh-n
+    12                  t-w-eh-l-v
+    13                  th-ih-r-t-ee-n
+    14                  f-oh-r-t-ee-n
+    15                  f-ih-f-t-ee-n
+    16                  s-ih-k-s-t-ee-n
+    17                  s-eh-v-eh-n-t-ee-n
+    18                  a-a-t-ee-n
+    19                  n-i-n-t-ee-n
+    20                  t-w-eh-n-t-ee
+    30                  th-u-r-t-ee
+    40                  f-oh-r-t-ee
+    50                  f-ih-f-t-ee
+    60                  s-ih-k-s-t-ee
+    70                  s-eh-v-eh-n-t-ee
+    80                  a-t-ee
+    90                  n-ih-n-t-ee
+    hundred             h-uh-n-d-r-eh-d
+    thousand            th-ah-u-s-eh-n-d
+    million             m-ih-l-y-uh-n
+
+
+Ordinal numbers:
+
+    first               f-u-r-s-t
+    second              s-eh-k-u-n-d
+    third               th-u-r-d
+    fourth              f-oh-r-th
+    fifth               f-ih-f-th
+    sixth               s-ih-k-s-th
+    seventh             s-eh-v-eh-n-th
+    eighth              a-a-t-th
+    ninth               n-i-n-th
+    tenth               t-eh-n-th
+
+
+Letters:
+
+    A                   a-ee
+    B                   b-ee
+    C                   s-ee
+    D                   d-ee
+    E                   ee-ee
+    F                   eh-f
+    G                   j-ee
+    H                   a-ch
+    I                   i
+    J                   j-a
+    K                   k-a
+    L                   eh-l
+    M                   eh-m
+    N                   eh-n
+    O                   oh-w
+    P                   p-ee
+    Q                   k-y-oo
+    R                   ah-r
+    S                   eh-s
+    T                   t-ee
+    U                   y-oo
+    V                   v-ee
+    W                   d-uh-b-l-y-oo
+    X                   eh-k-s
+    Y                   w-i
+    Z                   z-ee
+
+
+Words:
+
+    a                   uh
+    ability             ae-b-ih-l-ih-t-ee
+    aboard              uh-b-oh-r-d
+    abort               uh-b-oh-r-t
+    affirmative         ah-f-eh-r-m-ah-t-ih-v
+    all                 aw-l
+    alter               ah-l-t-r
+    an                  ae-n
+    and                 ae-n-d
+    Andy                ae-n-d-ee
+    any                 eh-n-ee
+    anybody             ae-n-ee-b-ah-d-ee
+    at                  ae-t
+    attacked            uh-t-ae-k-t
+
+    backup              b-ah-k-uh-p
+    basic               b-a-s-ih-k
+    baud                b-aw-d
+    be                  b-ee
+    begin               b-ee-g-ih-n
+    boot                b-oo-t
+    boss                b-oh-s
+    break               b-r-a-k
+    bug                 b-uh-g
+    by                  b-i
+
+    call                k-aw-l
+    calling             k-aw-l-ih-n-g
+    capable             k-a-p-uh-b-uh-l
+    Charlie             ch-ah-r-l-ee
+    city                s-ih-t-ee
+    cold                k-oh-l-d
+    combinations        k-ah-m-b-ih-n-a-sh-uh-n-s
+    comes               k-uh-m-s
+    command             k-uh-m-ah-n-d
+    consider            k-uh-n-s-ih-d-r
+    continue            k-uh-n-t-ih-n-y-oo
+    copyright           k-ah-p-ee-r-i-t
+    crash               k-r-ah-sh
+    create              k-r-ee-a-t
+
+    dancing             d-ae-n-s-ih-n-g
+    December            d-ee-s-eh-m-b-uh-r
+    different           d-ih-f-uh-r-eh-n-t
+    disk                d-ih-s-k
+    dog                 d-aw-g
+    dog                 d-oh-g
+    doing               d-oo-ih-n-g
+    done                d-uh-n
+    DOS                 d-aw-s
+    down                d-ah-w-n
+    drive               d-r-ae-v
+
+    eating              ee-t-ih-n-g
+    emergency           ee-m-r-j-eh-n-s-ee
+    enter               eh-n-t-r
+    error               eh-r-uh-r
+    escape              eh-s-k-a-p
+    exit                eh-k-s-ih-t
+
+    falls               f-ah-l-l-s
+    fast                f-ah-s-t
+    fatal               f-a-t-l
+    fault               f-aw-l-t
+    fixed               f-ih-k-s-t
+    floppy              f-l-oh-p-ee
+    following           f-ah-l-oh-w-ih-n-g
+    Foray               f-oh-r-a-ee
+
+    gently              j-eh-n-t-l-ee
+    gives               g-ih-v-s
+
+    hard                h-aw-r-d
+    has                 h-ae-s
+    hello               h-eh-l-oh-w
+    Henderson           h-eh-n-d-r-s-uh-n
+    here                h-ee-r
+    him                 h-ih-m
+    his                 h-ih-s
+    hit                 h-ih-t
+    hot                 h-ah-t
+    how                 h-aw-w
+    hundred             h-uh-n-d-r-eh-d
+
+    ignore              ih-g-n-oh-r
+    in                  ih-n
+    insert              ih-n-s-uh-r-t
+    interface           ih-n-t-r-f-ah-y-s
+    is                  ih-z
+    it                  ih-t
+
+    just                j-uh-s-t
+
+    key                 k-ee
+    killer              k-ih-l-r
+    kludge              k-l-oo-d-zh
+
+    like                l-i-k
+    limitless           l-ih-m-ih-t-l-eh-s-s
+    look                l-u-k
+
+    mail                m-a-uh-l
+    man                 m-ae-n
+    McGuire             m-ih-k g-w-i-r
+    memory              m-eh-m-oh-r-ee
+    miss                m-ih-s
+    modem               m-oh-d-ih-m
+    moon                m-oo-n
+    much                m-uh-ch
+    my                  m-i
+
+    name                n-a-m
+    no                  n-oh
+
+    of                  uh-f
+    on                  ah-n
+    or                  aw-r
+    out                 ah-w-t
+    out                 aw-t
+    outside             aw-t-s-ah-y-d
+
+    parallel            p-ah-r-uh-l-eh-l
+    phone               f-oh-n
+    phoneme             f-oh-n-eh-m
+    phonemes            f-oh-n-eh-m-s
+    plain               p-l-a-ih-n
+    port                p-oh-r-t
+    press               p-r-eh-s
+    printer             p-r-ih-n-t-r
+    program             p-r-oh-g-r-ae-m
+
+    rain                r-a-ih-n
+    RAM                 r-ah-m
+    ready               r-eh-d-ee
+    recover             r-ee-k-uh-v-r
+    remote              r-eh-m-oh-t
+    remove              r-ee-m-u-v
+    replace             r-ee-p-l-a-s
+    reproducing         r-ee-p-r-oh-d-oo-s-ih-n-g
+    reserved            r-ee-s-u-r-v-d
+    restore             r-ee-s-t-oh-r
+    retry               r-ee-t-r-i
+    rights              r-i-t-s
+
+    seadog              s-ee-d-oh-g
+    second              s-eh-k-uh-n-d
+    see                 s-ee
+    seen                s-ee-n
+    sentence            s-eh-n-t-eh-n-s
+    serial              s-ih-r-ee-ah-l
+    service             s-uh-r-v-eh-s
+    shall               sh-ah-l
+    side                s-ah-y-d
+    slow                s-l-oh-w
+    something           s-uh-m-th-ih-n-g
+    sound               s-ah-w-n-d
+    Spain               s-p-a-ih-n
+    speech              s-p-ee-ch
+    start               s-t-ah-r-t
+    starting            s-t-ah-r-t-ih-n-g
+    sysop               s-ih-s-ah-p
+
+    talk                t-aw-k
+    tape                t-a-p
+    telephone           t-eh-l-uh-f-oh-n
+    test                t-eh-s-t-t
+    the                 tz-uh
+    these               tz-ee-s
+    this                tz-ih-s
+    Thom                t-ah-m
+    to                  t-oo
+    tomato              t-uh-m-a-t-oh
+    too                 t-oo
+    try                 t-r-i
+
+    unit                y-oo-n-ih-t
+    us                  uh-s
+    user                y-oo-s-r
+    using               y-oo-s-ih-n-g
+    using               y-oo-z-ih-n-g
+
+    very                v-ae-r-ee
+    vocabulary          v-oh-k-ae-b-y-oo-l-ae-r-ee
+
+    warm                w-ah-r-m
+    we                  w-ee
+    welcome             w-eh-l-k-uh-m
+    working             w-uh-r-k-ih-n-g
+    would               w-u-d
+
+    yes                 y-eh-s
+    your                y-oh-r
+
+
+
+    Disclaimer
+    =========================================================================
+
+    This software was based upon information in the public domain and this
+    driver has been placed in the public domain as FREEWARE! As I'm receiving
+    no royalties for this program I take no responsibility for its behavior!
+    If this program causes a problem on your system that's unfortunate.
+    I've tested it to what I feel is a satisfactory standard. I've put this
+    driver into public domain, it should be made freely available with no
+    costs except for media charges. If you wish to include my driver in any
+    subsequent package please acknowledge my contribution by including this
+    documentation in the release. Please read the accompanying license agreement
+    ripped off from the GPL document.
+
+
+
+    Email any Correspondence or comments to : Jon Hornstein
+                                              Melbourne, Australia
+                                              sultan@connexus.net.au or 
+                                              Jon.Hornstein@eudoramail.com
+
+

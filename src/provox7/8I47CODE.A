@@ -1,0 +1,660 @@
+; provox 7.x -- 8i47code.a
+; data and code for i47 -- multiplex
+i47count dw 0
+i47entry: cmp ah,sysnumber ; for provox?
+ je > l1 ; if so
+ cmp ax, 22 shl 8 or 5 ; windows opening?
+ je > l2
+ cmp ax, 22 shl 8 or 6 ; windows closing?
+ jne > l3
+ push ds, ax, bx
+ mov ds, cs
+ call initialize
+ mov bx, offset i8msg13
+ call sendstring
+ jmp > l4
+l2: push ds, ax, bx
+ mov ds, cs
+ mov bx, offset i8msg12
+ mov ax, di
+ xchg ah, al
+ call tell3digits
+ mov al, '.'
+ call save3data
+ mov ax, di
+ call save3digits
+l4: pop bx, ax, ds
+l3:
+i47return db 234 ; far jump
+ dd ? ; chain to original i47 vector
+l1: push ds ; use the caller stack
+ mov ds, cs
+ test al ; identification?
+ jnz > l1
+ mov ax, not 0
+ mov bx, revision
+ mov cx, configsize
+ pop ds
+ iret
+l1: cmp al, 1 ; wake?
+ jne > l1
+ push es
+ mov es, 64
+ test b states0, enhanced
+ if nz es and b [23], not bit5 ; clear numlock
+ and w states1, not closed
+ pop es, ds
+ iret
+l1: cmp al, 2 ; doze?
+ jne > l1
+ or w states1, closed
+ pop ds
+ iret
+l1: mov w ax_save, ax
+ cbw ; sets ah to zero
+ push di, si, bx, cx, dx, es
+ call group0 ; functions 3 - 10
+ pop es, dx, cx, bx, si, di
+ mov ax, ax_save
+ pop ds
+ iret ; end of i47 code
+; subroutines
+group0: ; entry
+ cmp al, 3 ; configure provox?
+ if e jmp initialize
+ cmp al, 4 ; char for i9provox?
+ jne > l1
+ mov ax, bx
+ jmp i9provox
+l1: cmp al, 5 ; char for s16provox?
+ jne > l1
+ mov al, bl
+ jmp save1data
+l1: cmp al, 6 ; char for i22provox?
+ jne > l1
+ mov ax, bx
+ jmp i22provox
+l1: cmp al, 7 ; export data?
+ jne > l1
+ mov ax, configdata[bx]
+ mov ax_save, ax
+ ret
+l1: cmp al, 8 ; import word?
+ jne > l1
+ mov configdata[bx], cx
+ ret
+l1: cmp al, 9 ; import byte?
+ jne > l1
+ mov configdata[bx], cl
+ ret
+l1: cmp al, 10 ; dump buffer
+ jne ret
+ mov ax, not 0
+ mov bx, w bufhead
+ cmp bx, w buftail
+ je > l1
+ mov al, [bx]
+ and al, not bit7
+ cbw
+ inc bx
+ cmp bx, offset buffer + bufsize
+ if e mov bx, offset buffer
+ mov w bufhead, bx
+l1: mov w ax_save, ax
+ ret
+; end of group0
+;
+initialize: ; entry
+ call ask2init
+ mov al, autoload
+ call bankload
+ mov b f9hold, 4
+ and w states1, not i8busy
+ ret ; end of initialize
+bankload: ; entry
+ mov es, cs
+ and ax, 8 or 4 or 2 or 1
+ mov cx, banksize
+ mul cl
+ mov si, offset bank0name
+ add si, ax
+ mov di, offset bankname
+ shr cx, 1
+ cld
+ rep movsw
+ call set1alert
+ call set1ignore
+ mov bx, offset bankname
+ mov b [bx+15], 0
+ ret
+; end of bankload
+ask2init: ; entry
+ mov bx, voxnumber
+ cmp bx, maxvoxnum shl 1
+ jnb ret
+ cmp bx, 14 ; dectalk pc?
+ je > l1
+ cmp w voxport, 4 ; parallel?
+ jb > l1 ; if so
+ cmp w voxport, 8 ; serial?
+ jnb > l1 ; if not
+ mov ax, 227 ; 9600, 8n2
+ mov dx, voxport
+ and dx, not bit2
+ int 20
+l1: jmp w init1list[bx]
+init1list dw vox1init, vox2init, vox3init, vox4init, vox5init
+ dw dummy, vox7init, vox8init, vox9init, vox10init
+; end of ask2init
+vox1init: ; entry
+ mov ax, vox1data
+ call isdigit
+ jnc > l1
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '9'
+ if na mov w vox1mx[2], ax
+l1: mov al, vox1data[3] ; f#
+ cmp al, '1'
+ jb > l1
+ cmp al, '9'
+ if na mov b vox1mx[6], al
+l1: mov ax, vox1data[4] ; m/i, tone
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '1'
+ if na mov b vox1mx[9], ah
+l1: and al, not bit5
+ cmp al, 'i'
+ je > l1
+ cmp al, 'M'
+ jne > l2
+l1: mov b vox1mx[12], al
+l2: mov bx, offset vox1mx
+ jmp put2string
+; end of vox1init
+vox2init: ; entry
+ mov ax, vox2data ; pitch and tone
+ call isdigit
+ if c mov b vox2mx[2], al
+ and ah, not 32
+ cmp ah, 'A' ; letter?
+ jb > l1
+ cmp ah, 'Z'
+ ja > l1
+ mov b vox2mx[6], ah
+l1: mov bx, offset vox2mx
+ jmp put2string
+; end of vox2init
+vox3init: ; entry
+ mov ax, vox3data
+ call isdigit
+ jnc > l1
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '9'
+ ja > l1
+ mov w vox3mx[2], ax
+l1: mov al, vox3data[3] ; f#
+ cmp al, '1'
+ jb > l1
+ cmp al, '9'
+ if na mov b vox3mx[6], al
+l1: mov ax, vox3data[4] ; m/i, tone
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '1'
+ if na mov b vox3mx[9], ah
+l1: and al, not bit5
+ cmp al, 'I'
+ je > l1
+ cmp al, 'M'
+ jne > l2
+l1: mov b vox3mx[12], al
+l2: mov bx, offset vox3mx0
+ jmp put2string
+; end of vox3init
+vox4init: ; entry
+ mov al, vox4data ; pitch or flat?
+ cmp al, 'f'
+ je > l1
+ cmp al, 'p'
+ jne > l2
+l1: mov b vox4mx[8], al
+l2: mov ax, vox4data[1]
+ call isdigit
+ jnc > l1
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '6'
+ jb > l2
+ ja > l1
+ cmp al, '4'
+ ja > l1
+l2: mov w vox4mx[6], ax
+l1: mov bx, offset vox4mx
+ jmp put2string
+; end of vox4init
+vox5init: ; entry
+ mov al, vox5data ; inflection
+ cmp al, '0'
+ jb > l1
+ cmp al, '7'
+ if na mov b vox5pm[7], al
+l1: mov bx, offset vox5mx
+ jmp put2string
+; end of vox5init
+vox7init: ; entry
+ mov al, vox7data
+ call isdigit
+ if c mov b vox7mx2[2], al
+ mov al, vox7data[2]
+ call isdigit
+ if c mov b vox7mx2[5], al
+ mov bx, offset vox7mx
+ jmp put2string
+; end of vox7init
+vox8init: ; entry
+ mov bx, offset vox8data
+ mov al, [bx]
+ call isdigit
+ jc > l1
+ mov al, '0'
+ mov b [bx], al
+l1: and ax, 15
+ jmp set1voice
+; end of vox8init
+vox9init: ; entry
+ mov ax, vox9data
+ call isdigit
+ jnc > l1
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '9'
+ if na mov w vox9mx[2], ax
+l1: mov al, vox9data[3] ; f#
+ cmp al, '1'
+ jb > l1
+ cmp al, '9'
+ if na mov b vox9mx[6], al
+l1: mov ax, vox9data[4] ; m/i, tone
+ cmp ah, '0'
+ jb > l1
+ cmp ah, '1'
+ if na mov b vox9mx[9], ah
+l1: and al, not bit5
+ cmp al, 'I'
+ je > l1
+ cmp al, 'M'
+ jne > l2
+l1: mov b vox9mx[12], al
+l2: mov bx, offset vox9mx0
+ jmp put2string
+; end of vox9init
+vox10init: ; entry
+ mov ax, vox10data ; pitch and tone
+ call isdigit
+ if c mov b vox10mx[2], al
+ and ah, not bit5
+ cmp ah, 'A' ; letter?
+ jb > l1
+ cmp ah, 'Z'
+ ja > l1
+ mov b vox10mx[6], ah
+l1: mov bx, offset vox10mx
+ jmp put2string
+; end of vox10init
+vox1code label word ; for dtlt
+vox3code label word ; for double talk
+vox9code label word ; for lite talk
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '!'
+ dw x21
+ db '"'
+ dw x22
+ db '$'
+ dw x24
+ db 39
+ dw x27a
+ db '('
+ dw x28
+ db ')'
+ dw x29
+ db ','
+ dw x2c
+ db '-'
+ dw x2d
+ db '.'
+ dw x2e1
+ db '/'
+ dw x2f
+ db ':'
+ dw x3a
+ db ';'
+ dw x3b
+ db '<'
+ dw x3c
+ db '>'
+ dw x3e
+ db '?'
+ dw x3f
+ db '@'
+ dw x40
+ db '['
+ dw x5b
+ db ']'
+ dw x5d
+ db '_'
+ dw x5f
+ db '`'
+ dw x60
+ db '{'
+ dw x7b
+ db '|'
+ dw x7c
+ db '}'
+ dw x7d
+ db '~'
+ dw x7e
+ db ro
+ dw x7f1
+ db 0 ; end of table
+vox2code label word ; for porttalk
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '!'
+ dw x21
+ db '"'
+ dw x22
+ db '#'
+ dw x23
+ db '$'
+ dw x24
+ db '%'
+ dw x25
+ db '&'
+ dw x26
+ db 39
+ dw x27
+ db '('
+ dw x28
+ db ')'
+ dw x29
+ db '*'
+ dw x2a
+ db '+'
+ dw x2b
+ db ','
+ dw x2c
+ db '-'
+ dw x2d
+ db '.'
+ dw x2e
+ db '/'
+ dw x2f
+ db ':'
+ dw x3a
+ db ';'
+ dw x3b
+ db '<'
+ dw x3c
+ db '='
+ dw x3d
+ db '>'
+ dw x3e
+ db '?'
+ dw x3f
+ db '@'
+ dw x40
+ db '['
+ dw x5b
+ db '\'
+ dw x5c
+ db ']'
+ dw x5d
+ db '^'
+ dw x5e
+ db '_'
+ dw x5f
+ db '`'
+ dw x60
+ db '{'
+ dw x7b
+ db '|'
+ dw x7c
+ db '}'
+ dw x7d
+ db '~'
+ dw x7e
+ db ro
+ dw x7f1
+ db 0 ; end of table
+vox8code label word ; for dectalk pc
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '!'
+ dw x21
+ db '"'
+ dw x22
+ db '#'
+ dw x23
+ db '$'
+ dw x24
+ db '%'
+ dw x25
+ db '&'
+ dw x26
+ db 39
+ dw x27a
+ db '('
+ dw x28
+ db ')'
+ dw x29
+ db '*'
+ dw x2a
+ db '+'
+ dw x2b
+ db ','
+ dw x2c
+ db '-'
+ dw x2d
+ db '.'
+ dw x2e1
+ db '/'
+ dw x2f
+ db ':'
+ dw x3a1
+ db ';'
+ dw x3b1
+ db '<'
+ dw x3c
+ db '='
+ dw x3d
+ db '>'
+ dw x3e
+ db '?'
+ dw x3f
+ db '@'
+ dw x40
+ db '['
+ dw x5b
+ db '\'
+ dw x5c
+ db ']'
+ dw x5d
+ db '^'
+ dw x5e
+ db '_'
+ dw x5f
+ db '`'
+ dw x60
+ db '{'
+ dw x7b
+ db '|'
+ dw x7c
+ db '}'
+ dw x7d
+ db '~'
+ dw x7e
+ db ro
+ dw x7f
+ db 0 ; end of table
+vox4code label word ; for audapter
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '#'
+ dw x23
+ db ','
+ dw x2c
+ db ro
+ dw x7f
+ db 0 ; end of table
+vox5code label word ; for votrax pss
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '!'
+ dw x21
+ db '"'
+ dw x22
+ db 39
+ dw x27
+ db '('
+ dw x28
+ db ')'
+ dw x29
+ db ','
+ dw x2c
+ db '-'
+ dw x2d
+ db '.'
+ dw x2e
+ db ':'
+ dw x3a
+ db ';'
+ dw x3b
+ db '='
+ dw x3d
+ db '?'
+ dw x3f
+ db '@'
+ dw x40
+ db '['
+ dw x5b
+ db '\'
+ dw x5c
+ db ']'
+ dw x5d
+ db '^'
+ dw x5e
+ db '_'
+ dw x5f
+ db '`'
+ dw x60
+ db '{'
+ dw x7b
+ db '|'
+ dw x7c
+ db '}'
+ dw x7d
+ db '~'
+ dw x7e
+ db ro
+ dw x7f
+ db 0 ; end of table
+vox6code label word ; for braille & speak
+vox7code label word ; for accent
+vox10code label word ; for braille mate
+ db repeated
+ dw x1d
+ db times
+ dw x1e
+ db return
+ dw x1f
+ db 32
+ dw x20
+ db '!'
+ dw x21
+ db '"'
+ dw x22
+ db 39
+ dw x27
+ db '('
+ dw x28
+ db ')'
+ dw x29
+ db '*'
+ dw x2a
+ db '+'
+ dw x2b
+ db ','
+ dw x2c
+ db '-'
+ dw x2d
+ db '.'
+ dw x2e
+ db ':'
+ dw x3a
+ db ';'
+ dw x3b
+ db '<'
+ dw x3c
+ db '>'
+ dw x3e
+ db '?'
+ dw x3f
+ db '['
+ dw x5b
+ db '\'
+ dw x5c
+ db ']'
+ dw x5d
+ db '^'
+ dw x5e
+ db '_'
+ dw x5f
+ db '`'
+ dw x60
+ db '{'
+ dw x7b
+ db '|'
+ dw x7c
+ db '}'
+ dw x7d
+ db '~'
+ dw x7e
+ db ro
+ dw x7f
+ db 0 ; end of table
+; end of 8i47code.a
+

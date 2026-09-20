@@ -1,0 +1,47 @@
+                           Building PROVOX Version 7.0
+        
+        The PROVOX7 program is written in the assembly language A86 for 
+        Intel 80x86 processors. The shareware assembler by Eric Isaacson 
+        for this language is also called A86. The A86 assembly step and 
+        the linking step with Borland TLINK are shown below.
+        
+        d:\provox7> a86 *.a
+        Environment 86=+os
+        A86 macro assembler, V3.22 Copyright 1990 Eric Isaacson
+        Sources:
+        0PREFACE.A 1I5CODE.A 2I8CODE.A 3I9CODE.A
+        4I9JUMPS.A 5OTHERS.A 6I16CODE.A 7I22CODE.A
+        8I47CODE.A 9PROVOX7.A
+        Object: PROVOX7.OBJ
+        
+        d:\provox7> tlink -k provox7
+        Turbo Link Version 7.00 Copyright (c) 1987, 1994 Borland International
+        
+        d:\provox7>
+        
+        The PV7 program is written in C++ and is entirely contained in a 
+        single file called pv7.cpp. It is compiled with Borland C++ 
+        Version 4.51. The object program must be linked with DTC.LIB from 
+        RC Systems to form the executable program. Those steps are shown 
+        below.
+        
+        d:\provox7> bcc -Id:\bc45\include -Ld:\bc45\lib pv7 dtc.lib
+        
+        Borland C++ 4.51 Copyright (c) 1987, 1994 Borland International
+        pv7.cpp:
+        
+        Turbo Link Version 7.00 Copyright (c) 1987, 1994 Borland International
+        
+        d:\provox7>
+        
+        The above procedures produce the executable programs PROVOX7.EXE 
+        and PV7.EXE. Recommendations for freeware or shareware tools to 
+        replace the commercial linker and compiler used to build this 
+        software are welcome.
+        
+                      Author: Charles E. Hallenbeck, Ph.D.
+                                  439 Union St.
+                                Hudson, NY 12534
+                            Email: chuckh@taconic.net
+                        Web site: www.taconic.net/chuckh
+        

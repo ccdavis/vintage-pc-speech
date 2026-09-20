@@ -1,0 +1,863 @@
+; provox 7.x -- 7i22code.a
+; data and code for i22 -- keyboard
+i22entry: push ds ; use the caller stack
+ mov ds, cs
+ cmp w voxnumber, maxvoxnum shl 1 ; initialized?
+ je > l1 ; if not
+ test w states1, closed
+ jnz > l1
+  test ah
+ jz > l2
+ cmp ah, bit4
+ je > l2
+l1: pop ds
+i22return db 234 ; far jump
+ dd ? ; original i22 vector
+l2: push es, si, di, bx, cx, dx
+ pushf
+ call d i22return+1
+ push ax
+ call i22provox
+ pop ax
+ cmp al, cr
+ jne > l1
+ push ax
+ call context
+ pop ax
+l1: test w states1, portopen
+ jz > l1
+ call stopvox
+ dec b openport_count
+ mov b openport_watch, 0
+ cmp b openport_count, 1
+ ja > l1
+ test w states1, dataflow
+ jnz > l1
+ push ax
+ mov ax, 8 or 2 or 1 ; request to send
+ mov dx, combase
+ add dx, 4 ; modem control register
+ out dx, al
+ pop ax
+ or w states1, dataflow
+l1: pop dx, cx, bx, di, si, es, ds
+ iret ; end of code for i22
+;
+i22provox: ; entry
+ mov b i8wait2, 73 ; four seconds for context
+ cmp al, 224 ; alternate arrows?
+ if e xor al, al
+ mov w last1in, ax
+ and w states1, not (ph1flag or ph2flag) ; no phonetics
+ mov bx, w i8vidoff ; video offset
+ mov es, w i8vidseg
+ mov cl, b i8width
+ mov dx, w doscursor
+ cmp al, bsp
+ jne > l1 ; if not
+ xor ax, ax
+ xchg al, dh
+ mul cl
+ shl ax, 1
+ add bx, ax
+ test dl ; left column?
+ jz ret ; if so
+ dec dl
+ shl dx, 1
+ add bx, dx
+  es mov ax, [bx]
+ jmp save2data
+l1: test al ; arrows?
+ jnz > l2 ; if not
+ mov bx, 18 shl 8 or ';' ; char left or right
+ cmp ah, 75 ; left?
+ je > l1
+ cmp ah, 77 ; right?
+ je > l1
+ mov bl, ':' ; word left or right
+ cmp ah, 115 ; left?
+ je > l1
+ cmp ah, 116 ; right?
+ je > l1
+ mov bl, '?' ; line up or down
+ cmp ah, 72 ; up?
+ je > l1
+ cmp ah, 80 ; down?
+ jne > l2
+l1: mov w later, bx
+ mov w oldcursor, dx
+ ret
+l2: call islower
+ jnc > l1
+ mov es, 64
+ es test b [23], bit6
+ jnz > l2
+l1: inc dl
+ cmp b f19flag, dl
+ jne > l1
+l2: mov w i8tone, offset i8mid
+l1: cmp b f7flag, 0
+ if ne call save2data
+ ret
+; end of i22provox
+;
+context: ; entry
+ mov es, cs
+ xor ax, ax
+ mov di, offset i22shelf
+ mov cx, 5
+ cld
+ rep stosw ; clear the shelf
+ mov si, w i8vidoff
+ mov cl, b i8width
+ mov dx, w doscursor
+ xor ax, ax
+ xchg al, dh
+ mul cl
+ shl ax, 1
+ add si, ax
+ push ds
+ mov ds, w i8vidseg
+ mov di, offset i22shelf
+ mov cx, dx
+ cld
+ lodsw ; first char drive letter?
+ call isalpha
+ jnc > l1 ; fail
+ cld
+ lodsw ; second char ':'?
+ cmp al, ':'
+ jne > l1 ; fail
+ cld
+ lodsw ; third char '\'?
+ cmp al, '\'
+ jne > l1 ; fail
+l4: cld
+ lodsw ; subdirectory name?
+ cmp al, '>'
+ je > l2 ; success!
+ cmp al, '\'
+ je > l3 ; continue
+ cmp al, '.'
+ je > l3 ; continue
+ call isdigit
+ jc > l3 ; continue
+ call isalpha
+ jnc > l1 ; fail
+l3: loop l4
+l1: pop ds
+ ret
+l2: cld
+ stosb ; save it
+ lodsw ; get next char
+ call isdigit
+ jc > l1 ; continue
+ call isupper
+ jc > l1 ; continue
+ call islower
+ jnc > l3 ; finished
+ and al, not bit5
+l1: loop l2
+l3: pop ds ; look for match
+ cmp al, ':' ; unless this
+ je ret
+ mov si, offset bankname
+ mov di, offset i22shelf
+ mov cx, 10
+l1: es mov ah, [di]
+ mov al, ds:[si]
+ test ax ; ah=0, al=0 success
+ jz ret
+ cmp ah, al
+ jne > l2 ; no match here
+ inc si
+ inc di
+ loop l1
+ ret
+l2: mov cx, 10
+ mov si, offset bank0name
+l1: push cx, si
+ mov di, offset i22shelf
+ mov cx, 10
+l2: es mov ah, [di]
+ ds mov al, [si]
+ test ax ; ah=0, al=0 success
+ jz > l3
+ cmp ah, al
+ jne > l4 ; no match here
+ inc si
+ inc di
+ loop l2
+l4: pop si, cx
+ add si, banksize
+ loop l1
+ ret ; not found
+l3: pop si, cx ; found
+ mov cx, banksize shr 1
+ mov di, offset bankname
+ cld
+ rep movsw
+ call set1alert
+ call set1ignore
+ mov bx, offset i8msg6
+ jmp sendstring
+; end of context
+setcorners: ; entry
+; al = upper ascii, si = offset+2, ds/es reversed
+ cmp al, 180 ; smallest corner code
+ jb ret
+ cmp al, 218 ; highest corner code
+ ja ret
+ cmp al, 186 ; line
+ je ret
+ cmp al, 196 ; line
+ je ret
+ cmp al, 205 ; line
+ je ret
+ push ax
+ mov ah, 1 ; line down/right
+ cmp al, 201
+ je > l1
+ cmp al, 213
+ je > l1
+ cmp al, 214
+ je > l1
+ cmp al, 218
+ je > l1
+ mov ah, 1+2 ; line left/right/down
+ cmp al, 194
+ je > l1
+ cmp al, 203
+ je > l1
+ cmp al, 209
+ je > l1
+ cmp al, 210
+ je > l1
+ mov ah, 1+4 ; line up/down/right
+ cmp al, 195
+ je > l1
+ cmp al, 198
+ je > l1
+ cmp al, 199
+ je > l1
+ cmp al, 204
+ je > l1
+ mov ah, 1+2+4+8 ; line up/down/left/right
+ cmp al, 197
+ je > l1
+ cmp al, 206
+ je > l1
+ cmp al, 215
+ je > l1
+ cmp al, 216
+ jne > l2
+l1: jmp > l1
+l2: mov ah, 2 ; line left/down
+ cmp al, 183
+ je > l1
+ cmp al, 184
+ je > l1
+ cmp al, 187
+ je > l1
+ cmp al, 191
+ je > l1
+ mov ah, 2+8 ; line up/down/left
+ cmp al, 180
+ je > l1
+ cmp al, 181
+ je > l1
+ cmp al, 182
+ je > l1
+ cmp al, 185
+ je > l1
+ mov ah, 4 ; line up/right
+ cmp al, 192
+ je > l1
+ cmp al, 200
+ je > l1
+ cmp al, 211
+ je > l1
+ cmp al, 212
+ je > l1
+ mov ah, 4+8 ; line left/right/up
+ cmp al, 193
+ je > l1
+ cmp al, 202
+ je > l1
+ cmp al, 207
+ je > l1
+ cmp al, 208
+ je > l1
+ mov ah, 8 ; line left/up
+ cmp al, 188
+ je > l1
+ cmp al, 189
+ je > l1
+ cmp al, 190
+ je > l1
+ cmp al, 217
+ jne > l2
+l1: push di, bx, ax ; change offset+2 to line and column
+ mov ax, si
+ shr ax, 1
+ xor di, di
+ es mov bl, b i8width
+ xor bh, bh
+ add ax, bx
+l3: sub ax, bx
+ inc di
+ cmp ax, bx
+ ja l3
+ mov bx, di
+ mov ah, bl ; ah=line, al=column
+ mov di, ax
+ pop ax
+ es mov bx, corners ; index
+ cmp bx, 108 ; 3*36
+ jnb > l3
+ es mov corners[bx+2], ah ; corner type
+ es mov corners[bx+3], di ; corner location
+ inc bx
+ inc bx
+ inc bx
+ es mov corners, bx
+l3: pop bx, di
+l2: pop ax
+ ret
+; end of setcorners
+;
+dynamics: ; entry
+ mov cx, 9
+l1: mov bx, 9
+ sub bx, cx
+ shl bx, 1
+ shl bx, 1
+ mov si, boxes_this[bx+0] ; left upper corner
+ test si ; finished?
+ jz > l2
+ mov di, boxes_this[bx+2] ; right lower corner
+ push cx
+ mov cx, 9
+l3: mov bx, 9
+ sub bx, cx
+ shl bx, 1
+ shl bx, 1
+ cmp w boxes_last[bx+0], 0
+ je > l4
+ cmp boxes_last[bx+0], si
+ jne > l5
+ cmp boxes_last[bx+2], di
+ je > l6
+l5: loop l3
+l4: call save1box
+l6: pop cx
+ loop l1
+l2: push es
+ mov es, ds
+ mov cx, 3
+ mov w last1in, 0 ; not from kbd
+ cmp b f6flag, 3 ; is it <3, 3, or 3+?
+ jb > l1 ; if <3
+ je > l2 ; if 3
+ cmp b f6flag, 5 ; is it 4, 5, or 6+?
+ jb > l3 ; if 4
+ je > l4 ; if 5
+ mov si, offset fg_this ; f6flag=7
+ mov di, offset fg_last
+ jmp > l5
+l2: mov si, offset bg_this ; f6flag=3
+ mov di, offset bg_last
+ jmp > l2
+l3: mov si, offset fg_this ; f6flag=4
+ mov di, offset fg_last
+l2: mov ax, cx
+ call times6
+ mov ax, [si+bx+2] ; new sum
+ test ax
+ jz > l3
+ cmp ax, [di+bx+2] ; new sum
+ jne > l6
+ mov ax, [si+bx+0] ; old masks
+ cmp ax, [di+bx+0] ; new masks
+ jne > l6
+ mov ax, [si+bx+4] ; new crc
+ cmp ax, [di+bx+4] ; old crc
+ jne > l6
+l3: loop l2
+l1: pop es ; no changes
+ ret
+l6: pop es ; found changes
+ mov bx, [si] ; masks
+ mov al, b i8line ; compute screen size
+ cbw
+ inc al
+ mov cl, b i8width
+ mul cl
+ mov cx, ax ; screen size
+ mov si, w i8vidoff
+l1: es mov ax, [si]
+ cmp al, spc ; ctrl char or upper ascii?
+ jl > l2
+ and ah, bl
+ cmp ah, bh
+ jne > l3
+l2: mov al, spc
+l3: call save1data
+ inc si
+ inc si
+ loop l1
+ ret
+l4: mov si, offset bg_this ; f6flag=5
+ mov di, offset bg_last
+ l5: mov ax, cx
+ call times6
+ mov ax, [si+bx+2] ; new sum
+ test ax
+ jz > l1
+ cmp ax, [di+bx+2] ; new sum
+ jne > l2
+ mov ax, [si+bx+0] ; old masks
+ cmp ax, [di+bx+0] ; new masks
+ jne > l2
+ mov ax, [si+bx+4] ; new crc
+ cmp ax, [di+bx+4] ; old crc
+ jne > l2
+l1: loop l5
+ pop es ; no changes
+ ret
+l2: pop es ; found changes
+ mov bx, [bx+si] ; masks
+save2screen: ; entry
+; bx=masks, es=video segment
+ mov w later,  0
+ mov al, b i8line ; compute screen size
+ cbw
+ inc al
+ mov cl, b i8width
+ mul cl
+ mov cx, ax ; screen size
+ mov si, w i8vidoff
+l1:  es mov ax, [si]
+ cmp al, spc ; ctrl char?
+ jl > l2 ; control char or upper ascii?
+ and ah, bl
+ cmp ah, bh
+ je > l3
+l2: mov al, spc
+l3: call save1data
+ inc si
+ inc si
+ loop l1
+ ret
+; end of save2screen
+; end of dynamics
+save1box: ; entry
+; si=top left, di=bottom right, es=video segment
+ mov w later,  0
+ mov cx, di
+ mov dx, si
+ dec dh
+ dec dl
+ mov w last1in, 0 ; not from kbd
+l1: mov bx, dx ; saves top left
+ mov si, w i8vidoff
+ xor ax, ax
+ xchg al, dh
+ mov di, dx ; save left
+ shl ax, 1
+ shl dx, 1
+ add si, dx
+ mov dx, cx
+ mov cl, b i8width
+ mul cl
+ add si, ax
+ xor ch, ch
+ cmp cl, dl
+ if g mov cl, dl
+ sub cx, di
+l2:  es mov ax, [si]
+ cmp al, spc ; ctrl char or upper ascii?
+ if l mov al, spc
+ call save1data
+ inc si
+ inc si
+ loop l2
+ mov cx, dx
+ mov dx, bx
+ inc dh
+ cmp dh, ch
+ jl l1
+ ret
+; end of save1box
+set1alert: ; entry
+ mov es, cs
+ mov di, offset hotsub
+ mov al, b banksub[0] ; smart screen #1
+ call getsmart
+ mov al, b banksub[1]
+;
+getsmart: ; entry
+ mov cx, 6
+ call isdigit
+ jnc > l1
+ and ax, bit3 or bit2 or bit1 or bit0
+ mul cl
+ mov si, offset banktable
+ add si, ax
+ cld
+ rep movsb
+ ret
+l1: xor ax, ax
+ cld
+ rep stosb
+ ret
+; end of getsmart
+; end of set1alert
+get1alert: ; entry
+ jmp w glrtsw
+glrx1: mov w glrtsw, offset glrx2
+ mov bx, offset glrm1
+ call sendstring
+ mov al, banksub[0]
+ call isdigit
+ jnc > l1
+ mov glrm5[0], al
+ mov bx, offset glrm4
+ call sendstring
+ mov al, banksub[1]
+ call saynumber
+ jmp > l2
+l1: mov bx, offset glrm3
+ call sendstring
+l2: mov bx, offset glrm6
+l1: call sendstring
+ mov bx, offset glrm10
+ clc ; not done
+ ret
+glrx2: call isdigit
+ jc > l3
+ cmp al, escp
+ je > l4
+ cmp al, spc
+ je > l5
+ cmp al, '/'
+ jne l2
+ mov w banksub[0], 0
+ jmp > l4
+l3: mov banksub[0], al
+l5: mov w glrtsw, offset glrx3
+l2: mov bx, offset glrm7
+ jmp l1
+glrx3: call isdigit
+ jc > l1
+ cmp al, escp
+ je > l4
+ cmp al, spc
+ je > l4
+ cmp al, '/'
+ jne l2
+ mov b banksub[1], 0
+ jmp > l4
+l1: mov banksub[1], al
+l4: mov w glrtsw, offset glrx1
+ call set1alert
+ stc
+ ret
+glrtsw dw offset glrx1
+; end of get1alert
+get1ignore: ; entry
+ jmp w ggnrsw
+ggnr1: mov w ggnrsw, offset ggnr5
+ mov bx, offset ggnrm1
+ call sendstring
+ mov ax, banksub[2]
+ call isdigit
+ jnc > l1
+ call say2nums
+ jmp > l2
+l1: mov bx, offset glrm3
+ call sendstring
+l2: mov bx, offset ggnrm2
+l1: call sendstring
+ mov bx, offset glrm10
+ clc ; not done
+ ret
+ggnr5: call isdigit
+ jc > l3
+ cmp al, escp
+ je > l4
+ cmp al, spc
+ je > l5
+ cmp al, '/'
+ jne l2
+ mov w banksub[2], 0
+ jmp > l4
+l3: mov banksub[2], al
+l5: mov w ggnrsw, offset ggnr9
+l2: mov bx, offset ggnrm3
+ jmp l1
+ggnr9: call isdigit
+ jc > l1
+ cmp al, escp
+ je > l4
+ cmp al, spc
+ je > l4
+ cmp al, '/'
+ jne l2
+ mov b banksub[3], 0
+ jmp > l4
+l1: mov banksub[3], al
+l4: mov w ggnrsw, offset ggnr1
+ call set1ignore
+ stc ; done
+ ret
+ggnrsw dw offset ggnr1
+; end of get1ignore
+say2nums: ; entry
+ push ax
+ call saynumber
+ pop ax
+ xchg ah, al
+saynumber: ; entry
+ call isdigit
+ if nc ret
+ mov bx, offset snm
+ mov [bx+1], al
+ jmp sendstring
+snm db '##', 0
+; end of saynumber
+; end of say2nums
+fix4regs: ; entry
+; bx = address of masks
+; sets cx/dx to subscreen
+ mov ax, w doscursor ; cursor location
+ mov cx, [bx+4] ; bottom right corner
+ mov dx, [bx+2] ; top left corner
+ add ax, bit8 or bit0
+ cmp ch, 255 ; cursor line?
+ if e mov ch, ah
+ cmp dh, 255
+ if e mov dh, ah
+ cmp cl, 255 ; cursor column?
+if e mov cl, al
+ cmp dl, 255
+if e mov dl, al
+ cmp dh, 1
+ if b mov dh, 1
+ cmp ch, dh
+ if b mov ch, dh
+ dec ch
+ cmp ch, b i8line
+ if a mov ch, b i8line
+ inc ch
+ cmp dl, 1
+ if b mov dl, 1
+ cmp cl, dl
+ if b mov cl, dl
+ cmp cl, b i8width
+ if a mov cl, b i8width
+ sub dx, bit8 or bit0
+ ret
+; end of fix4regs
+;
+deadzone: ; entry
+ push ax, bx
+ mov ax, bx
+ cmp b ax_save[1], 9 ; write attrib & char?
+ je > l1 ; skip if yes
+ push ax
+ es mov bx, [78] ; page offset
+ es mov cx, [74] ; line width
+ mov ax, 0b800h ; cga video segment
+ es cmp b [73], 4
+ if nb mov ax, 0b000h ; mode 7 video segment
+ push es, dx
+ mov es, ax
+ xor ax, ax
+ xchg al, dh
+ shl dx, 1
+ add bx, dx
+ mul cl
+ shl ax, 1
+ add bx, ax
+  es mov ax, [bx]
+ mov b bx_save, ah
+ pop dx, es, ax
+l1: inc ah
+ inc al
+ mov bx, offset deadsub
+ call test4regs
+ jc > l1
+ add bx, 6
+ call test4regs
+l1: pop bx, ax
+ ret
+; end of deadzone
+test4regs: ; entry
+ mov cx, [bx+4] ; bottom right corner
+ jcxz > l1
+ mov dx, [bx+0]
+ and dl, bx_save
+ cmp dh, dl
+ jne > l1
+ mov dx, [bx+2] ; top left corner
+ cmp ch, 255 ; cursor line?
+ if e mov ch, ah
+ cmp dh, 255
+if e mov dh, ah
+ cmp cl, 255 ; cursor column?
+if e mov cl, al
+ cmp dl, 255
+ if e mov dl, al
+ cmp dh, 1
+ jb > l1
+ cmp ch, dh
+ jb > l1
+ dec ch
+ cmp ch, b i8line
+ ja > l1
+ inc ch
+ cmp dl, 1
+ jb > l1
+ cmp cl, dl
+ jl > l1
+ cmp cl, b i8width
+ ja > l1
+ cmp ah, dh
+ jb > l1
+ cmp ch, ah
+ jb > l1
+ cmp al, dl
+ jb > l1
+ cmp cl, al
+ jb > l1
+ stc ; if ignore
+ ret
+l1: clc ; if okay
+ ret
+; end of test4regs
+send1char: ; entry
+ test w states1, closed
+ jnz ret
+ xor ah, ah
+ test al, bit7 ; from system?
+ jnz > l1 ; if not
+ cmp b f5flag, 3 ; say all punctuation?
+ je > l2 ; if yes
+ cmp b f5flag, 1 ; 0 = pass through
+ je > l3 ; if 1
+ ja > l4 ; if 2
+ mov bx, maxvoxnum shl 1 - 2 ; vanilla
+ jmp > l5
+l4: cmp al, spc ; space from system?
+ jne > l2 ; if not
+ jmp > l4
+l3: call isalpha
+ jc > l2 ; if okay
+ call isdigit
+ jc > l2 ; if okay
+l4: mov al, spc ; use true space
+ jmp vox3move
+l1: and al, not bit7 ; drop bit #7
+l2: mov bx, voxnumber
+ mov ah, last4out
+ mov last4out, al
+ cmp al, spc
+ jne > l1
+ cmp ah, '.'
+ jne > l5
+ mov al, '.'
+ jmp > l2
+l1: cmp b f3flag, 0
+ jne > l5
+ cmp al, '.'
+ je > l1
+ cmp al, ','
+ je > l1
+ cmp al, '-'
+ jne > l5
+l1: cmp ah, '0'
+ jb > l5
+ cmp ah, '9'
+ jle > l2
+l5: mov bx, codelist[bx]
+l1: cmp b [bx], 0
+ je > l2
+ cmp b [bx], al
+ je > l3
+ add bx, 3
+ jmp l1
+l3: mov bx, [bx+1]
+ jmp move1string
+l2: call isupper
+ jnc > l1 ; if not
+ push ax ; save the char
+ cmp b f4flag, 0 ; say capital?
+ je > l2 ; if not
+ mov bx, offset send1cap
+ call move1string
+ jmp > l3
+l2: xchg ah, al
+ call isupper
+ jc > l3 ; if yes
+ mov ax, spc
+ call vox3move
+l3: pop ax ; get char back
+l1: jmp vox3move
+codelist dw vox1code, vox2code, vox3code, vox4code
+ dw vox5code, vox6code, vox7code, vox8code, vox9code, vox10code
+send1cap db 'cap', 0
+; end of send1char
+move1string: ; entry
+ mov ax, spc
+ push ax
+ jmp > l1
+l2: mov al, [bx] ; next char to al
+ test al ; message done?
+ jz > l3 ; if yes
+ push ax
+ inc bx
+l1: push bx
+ call vox3move
+ pop bx, ax
+ jmp l2
+l3: mov ax, spc
+vox3move: ; entry
+ and al, not bit7
+ cmp al, spc ; ctrl char?
+ ja > l1
+ mov ah, last1moved
+ test al ; null char?
+ if z mov al, cr ; use cr if so
+ cmp al, cr
+ je > l2 ; keep it
+ cmp ah, spc ; after space?
+ je ret
+ mov al, spc
+l2: cmp ah, cr ; after cr?
+ je ret
+l1: cbw
+ mov bx, shelfcount
+ cmp al,cr
+ je > l1 ; if so
+ cmp bx, shelfsize shr 1
+ jl > l1
+ cmp al, spc
+ je > l2
+ cmp bx, shelfsize-3
+ jl > l1
+ mov w shelf[bx], ax
+ inc bx
+ inc w shelfcount
+l2: mov al, cr
+l1: mov w shelf[bx], ax
+ mov b last1moved, al
+ inc w shelfcount
+ cmp al, cr
+ if e or w states1, holding
+ ret
+; end of vox3move
+; end of move1string
+; end of 7i22code.a
+
+

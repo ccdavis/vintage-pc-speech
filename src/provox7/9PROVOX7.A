@@ -1,0 +1,207 @@
+; provox 7.x -- 9provox7.a
+; start up code overlaps with stacks and buffers
+ptrsav  dd ?  ; request packet pointer
+;
+strategy: ; far entry
+ cs mov w ptrsav, bx
+ cs mov w ptrsav+2, es
+ retf
+; end of strategy
+;
+activity: ; far entry
+ push ax, bx, ds, es
+ mov ds, cs
+ les bx, ptrsav ; get packet addr
+ es mov al, [bx+2] ; get command
+ test al ; is command valid ?
+ jz > l1 
+ mov al, 3 ; get unknown code
+ mov ah, 1 shl 7 or 1 ; mark error and done
+ jmp > l2 ; join code
+l1: call install
+ and b states0, not tsr_type
+ mov dx, offset residentend  ; ds:dx points to end
+ les bx, ptrsav
+ es mov [bx+14], dx
+ es mov [bx+16],cs 
+ mov ah, 1 ; mark as done
+l2: les bx, cs:ptrsav ; get packet addr
+ es mov [bx+3], ax ; store status
+ pop es , ds, bx, ax
+ retf
+msg db cr, lf ; throwaway sign on message
+ db 'PROVOX 7.xx - Created 1985 by Kansys, Inc.'
+ db cr, lf, 'Copyright (c) 1999 Chuck Hallenbeck'
+ db cr, lf, 0
+; end of activity
+install: ; entry
+ xor ax, ax ; set up interrupt vectors
+ mov es, ax
+ cli ; hold interrupts
+  es mov ax, [20] ; i5 -- print screen
+ mov w i5return+1, ax
+  es mov ax, [22]
+ mov w i5return+3, ax
+  es mov ax, [32] ; i8 -- system clock
+ mov w i8return+1, ax
+  es mov ax, [34]
+ mov w i8return+3, ax
+  es mov ax, [36] ; i9 -- keyboard (hardware)
+ mov w i9return+1, ax
+  es mov ax, [38]
+ mov w i9return+3, ax
+  es mov ax, [64] ; i16 -- video services
+ mov w i16return+1, ax
+  es mov ax, [66]
+ mov w i16return+3, ax
+  es mov ax, [88] ; i22 -- keyboard (software)
+ mov w i22return+1, ax
+  es mov ax, [90]
+ mov w i22return+3, ax
+  es mov ax, [92] ; i23 -- printer
+ mov w i23port, ax
+  es mov ax, [94]
+ mov w i23port+2, ax
+  es mov ax, [188] ; i47 -- dos multiplex
+ mov w i47return+1, ax
+  es mov ax, [190]
+ mov w i47return+3, ax
+ mov ax,cs ; get this segment
+ es mov w [20], offset i5entry
+ es mov [22], ax
+ es mov w [32], offset i8entry
+ es mov [34], ax
+ es mov w [36], offset i9entry
+ es mov [38], ax
+ es mov w [64], offset i16entry
+ es mov [66], ax
+ es mov w [88], offset i22entry
+ es mov [90], ax
+ es mov w [188], offset i47entry
+ es mov [190], ax
+ sti ; take interrupts
+ mov es, 64
+ es mov si, [78] ; page offset
+ mov ax, 0b800h ; cga video segment
+ es cmp b [73], 4
+ if nb mov ax, 0b000h ; mode 7 video segment
+ mov ds, ax
+ es mov al, [98] ; video page
+ shl ax, 1
+ mov bx, 80 ; cursor list
+ add bx, ax
+ es mov bl, [74] ; line width
+ xor bh, bh
+ es mov cl, [bx+1] ; cursor line
+ inc cl
+ xor ch, ch
+l1: push cx
+ mov cx, bx
+ xor dx, dx
+l2: cld
+ lodsw ; get video word
+ test al, 1 shl 7
+ jnz > l3
+ cmp al, spc
+ ja > l4
+l3: mov al, spc
+ cmp dl, al
+ je > l3
+l4: mov dl, al
+ push cx, dx, ds
+ mov ds, cs
+ call save1data
+ pop ds, dx, cx
+l3: loop l2
+ mov al, cr
+ push ds
+mov ds, cs
+ call save1data
+ pop ds, cx
+ loop l1
+ mov ds, cs
+ mov w msg[11], revision
+ xor bx, bx ; sign on banner
+l1: mov al, msg[bx]
+ test al ; done?
+ jz > l2
+ push bx
+ es mov bh, [98] ; current page
+ mov ah, 14 ; wtt
+ int 16
+ pop bx
+ inc bx
+ jmp l1
+l2: and b states0, not enhanced ; check the keyboard
+ es test b [150], 1 shl 4 ; enhanced?
+ jz > l1
+ or b states0, enhanced
+ es and b [23], not (1 shl 5) ; clear numlock
+l1:  mov al, boxdrive
+ call isupper
+ jnc > l1
+ mov b filename+0, al
+ mov b binfile+0, al
+l1: mov ax, 4 shl 8 ; check the date
+ int 26
+ mov ah, cl ; year
+ and ah, 8 or 4 or 2 or 1
+ mov al, cl
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ add w filename+5, ax
+ add w binfile+5, ax
+ mov ah, dh ; month
+ and ah, 8 or 4 or 2 or 1
+ mov al, dh
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ add w filename+7, ax
+ add w binfile+7, ax
+ mov ah, dl ; day
+ and ah, 8 or 4 or 2 or 1
+ mov al, dl
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ shr al, 1
+ add w filename+9, ax
+ add w binfile+9, ax
+ ret
+; end of install
+; entry for tsr
+main: mov ds, cs
+ mov ax,sysnumber shl 8 ; ask if provox present
+ int 47
+ cmp ax, not 0
+ je > l1
+ call install
+ or b states0, tsr_type
+ mov es, cs ; restore es
+ mov dx, offset residentend+256
+ int 39 ; exit, keep resident routines
+l1: mov dx, offset msg1
+ mov cx, msg1l
+ mov bx, stderr
+ mov ax, 64 shl 8 ; write
+ int 33
+ mov ax, 76 shl 8 + 1 ; exit with error code
+ int 33
+msg1 db cr, lf, ' * * Provox 7 already installed', cr, lf
+msg1l equ $ - offset msg1
+freespace:
+; virtual buffer and stacks
+int5_stack equ ptrsav + stacksize
+int8_stack equ int5_stack + stacksize
+int9_stack equ int8_stack + stacksize
+clipboard equ int9_stack
+buffer equ clipboard + clipsize
+residentend equ buffer + bufsize
+
+; end of 9provox7.a
+
+

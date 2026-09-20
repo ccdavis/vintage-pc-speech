@@ -1,0 +1,869 @@
+; provox 7.x -- 3i9code.a
+; data and code for i9 -- keyboard (hardware)
+i9ax dw ?
+i9sp dw ?
+i9ss dw ?
+altkey dw ?
+i9state dw i9direct ; provox state switch
+;
+i9entry: push ds
+ mov ds, cs
+ cmp w voxnumber, maxvoxnum shl 1 ; initialized?
+ je > l1 ; if not
+ test w states1, closed or i9busy
+ jz > l2
+l1: pop ds
+i9return db 234 ; far jump
+ dd ? ; original i9 vector
+l2: or w states1, i9busy
+ mov w i9ss, ss
+ mov w i9sp, sp
+ cli ; hold interrupts
+ mov ss, cs
+ mov sp, offset int9_stack
+ sti ; take interrupts
+ push ax, es, si, di, bx, cx, dx
+ mov es, 64
+ es push w [28] ; kbd buffer tail
+ es push w [23] ; kbd states
+ pushf
+ call d i9return+1
+ pop ax ; old kbd states
+ call i9tell
+ pop bx ; old kbd buffer tail
+ es cmp [28], bx ; did the tail move?
+ je > l1 ; if not
+ es mov ax, [bx] ; get the new keystroke
+ push bx, es
+ call i9keystroke
+ pop es, ax ; old buffer tail
+ jnc > l1
+ es mov [28], ax ; reset buffer tail
+l1: pop dx, cx, bx, di, si, es, ax
+ cli ; hold interrupts
+ mov ss, i9ss
+ mov sp, i9sp
+ and w states1, not i9busy
+ pop ds
+ iret ; end of code for i9 -- keyboard (hardware)
+; subroutines
+exitroute: ; entry
+ mov w revcursor, dx
+ or b states0, routing
+ mov w i8count, 0
+ mov bx, offset xrtm2
+ jmp sendstring
+xrtm2 db 'moving cursor', ro, 0
+; end of exitroute
+vox1menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox1jl[bx]
+vox1m1: mov w vox1mx[2],'05'
+ mov b vox1mx[6],'5'
+ mov b vox1mx[9],'1'
+ mov b vox1mx[12],'m'
+l1: mov bx, offset vox1mx
+ call put2string
+vox1m0: clc ; not through
+ ret
+vox1m3: mov bx, vox1mx[2]
+ cmp bx, '00' ; do nothing if minimum
+ je vox1m0
+ dec bh
+ cmp bh, '0'-1
+ ja > l2
+ mov bh, '9'
+ dec bl
+ jmp > l2
+vox1m4: mov bx, vox1mx[2]
+ cmp bx, '99' ; ignore if maximum
+ je vox1m0
+ inc bh
+ cmp bh, '9'+1
+ jb > l2
+ mov bh, '0'
+ inc bl
+l2: mov w vox1mx[2], bx
+ jmp l1
+vox1m5: mov al, vox1mx[6]
+ cmp al, '0' ; ignore if minimum
+ je vox1m0
+ dec al
+ jmp > l2
+vox1m6: mov al, vox1mx[6]
+ cmp al, '9' ; ignore if maximum
+ if ne inc al
+l2: mov b vox1mx[6], al
+ jmp l1
+vox1m10: mov ax, vox1mx[2]
+ mov w vox1data, ax
+ mov al, vox1mx[6]
+ mov vox1data[3], al
+ mov ah, vox1mx[9]
+ mov al, vox1mx[12]
+ mov w vox1data[4], ax
+ stc ; through
+ ret
+vox1jl dw vox1m0, vox1m1, vox1m0, vox1m3, vox1m4, vox1m5, vox1m6, vox1m10
+vox1mx0 db cr, 1, '@'
+vox1mx db cr, 1, '50P', 1, '5F', 1, '1X', 1, 'I', 1, 'T', 0
+; end of vox1menu
+vox2menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox2jl[bx]
+vox2m1: mov b vox2mx[2],'0'
+ mov b vox2mx[6], 'h'
+l1: mov al, vox2mx[2]
+ mov ah, vox2mx[6]
+ mov w vox2data, ax
+ mov bx, offset vox2mx
+ call put2string
+vox2m0: clc ; not through
+ ret
+vox2m3: mov al, vox2mx[2] ; pitch
+ cmp al, '0'
+ je vox2m0
+ dec al
+ jmp > l2
+vox2m4: mov al, vox2mx[2] ; pitch
+ cmp al, '9'
+ je vox2m0
+ inc al
+l2: mov b vox2mx[2], al
+ jmp l1
+vox2m5: mov al, vox2mx[6] ; tone
+ cmp al, 'a'
+ je vox2m0
+ dec al
+ jmp > l2
+vox2m6: mov al, vox2mx[6] ; tone?
+ cmp al, 'z'
+ je vox2m0
+ inc al
+l2: mov b vox2mx[6], al
+ jmp l1
+vox2m10: mov al, vox2mx[2]
+ mov ah, vox2mx[6]
+ mov w vox2data, ax
+ stc ; through
+ ret
+vox2jl dw vox2m0, vox2m1, vox2m0, vox2m3, vox2m4, vox2m5, vox2m6, vox2m10
+vox2mx db 5, 'P6', spc, 5, 'TH', spc, 0
+; end of vox2menu
+vox3menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox3jl[bx]
+vox3m1: mov w vox3mx[2],'05'
+ mov b vox3mx[6],'5'
+ mov b vox3mx[9],'1'
+ mov b vox3mx[12],'m'
+l1: mov bx, offset vox3mx
+ call put2string
+vox3m0: clc ; not through
+ ret
+vox3m3: mov bx, vox3mx[2]
+ cmp bx, '00' ; do nothing if minimum
+ je vox3m0
+ dec bh
+ cmp bh, '0'-1
+ ja > l2
+ mov bh, '9'
+ dec bl
+ jmp > l2
+vox3m4: mov bx, vox3mx[2]
+ cmp bx, '99' ; ignore if maximum
+ je vox3m0
+ inc bh
+ cmp bh, '9'+1
+ jb > l2
+ mov bh, '0'
+ inc bl
+l2: mov w vox3mx[2], bx
+ jmp l1
+vox3m5: mov al, vox3mx[6]
+ cmp al, '0' ; ignore if minimum
+ je vox3m0
+ dec al
+ jmp > l2
+vox3m6: mov al, vox3mx[6]
+ cmp al, '9' ; ignore if maximum
+ je vox3m0
+ inc al
+l2: mov b vox3mx[6], al
+ jmp l1
+vox3m10: mov ax, vox3mx[2]
+ mov w vox3data, ax
+ mov al, vox3mx[6]
+ mov b vox3data[3], al
+ mov ah, vox3mx[9]
+ mov al, vox3mx[12]
+ mov w vox3data[4], ax
+ stc ; through
+ ret
+vox3jl dw vox3m0, vox3m1, vox3m0, vox3m3, vox3m4, vox3m5, vox3m6, vox3m10
+vox3mx0 db cr, 1, '@'
+vox3mx db cr, 1, '50P', 1, '5F', 1, '1X', 1, 'I', 1, 'T', 0
+; end of vox3menu
+vox4menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox4jl[bx]
+vox4m1: mov w vox4mx[6],'11'
+ mov b vox4mx[8],'f'+32
+l1: mov bx, offset vox4mx
+ call put2string
+vox4m0: clc ; not through
+ ret
+vox4m3: mov bx, vox4mx[6] ; pitch
+ cmp bx, '00' ; do nothing if minimum
+ je vox4m0
+ dec bh
+ cmp bh, '0'-1
+ ja > l2
+ mov bh, '9'
+ dec bl
+ jmp > l2
+vox4m4: mov bx, vox4mx[6] ; pitch
+ cmp bx, '36' ; ignore if maximum
+ je vox4m0
+ inc bh
+ cmp bh, '9'+1
+ jb > l2
+ mov bh, '0'
+ inc bl
+ cmp bx, '64'
+ je vox4m0 ; do nothing if maximum
+l2: mov w vox4mx[6], bx
+ jmp l1
+vox4m10: mov ax, vox4mx[6]
+ mov w vox4data[1], ax
+ mov al, vox4mx[8]
+ mov b vox4data, al
+ stc ; through
+ ret
+vox4jl dw vox4m0, vox4m1, vox4m0, vox4m3, vox4m4, vox4m0, vox4m0, vox4m10
+vox4mx db 5, '[AM]', 5, '11f', 0
+; end of vox4menu
+vox5menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox5jl[bx]
+vox5m1: mov b vox5mx[7],'7' ; inflection
+l1: mov al, vox5mx[7]
+ mov b vox5data, al
+ mov bx, offset vox5mx
+ call put2string
+vox5m0: clc ; not through
+ ret
+vox5m3: mov al, vox5mx[7]
+ cmp al, '4' ; minimum?
+ je vox5m0
+ dec al
+ jmp > l2
+vox5m4: mov al, vox5mx[7]
+ cmp al, '7' ; maximum?
+ je vox5m0
+ inc al
+l2: mov b vox5mx[7], al
+ jmp l1
+vox5m10: mov al, vox5mx[7]
+ mov b vox5data, al
+ stc ; through
+ ret
+vox5jl dw vox5m0, vox5m1, vox5m0, vox5m3, vox5m4, vox5m0, vox5m0, vox5m10
+vox5mx db 27, 'M00. @7', spc, 0
+; end of vox5menu
+vox7menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox7jl[bx]
+vox7m1: mov b vox7mx2[2],'5' ; standard pitch
+ mov b vox7mx2[5],'5' ; standard voice
+l1: mov bx, offset vox7mx
+ call put2string
+vox7m0: clc ; not through
+ ret
+vox7m3: cmp b vox7mx2[2],'0' ; minimum?
+ je vox7m0
+ dec b vox7mx2[2]
+ jmp l1
+vox7m4: cmp b vox7mx2[2],'9' ; maximum?
+ je vox7m0
+ inc b vox7mx2[2]
+ jmp l1
+vox7m5: cmp b vox7mx2[5],'0' ; minimum?
+ je vox7m0
+ dec b vox7mx2[5]
+ jmp l1
+vox7m6: cmp b vox7mx2[5],'9'
+ je vox7m0
+ inc b vox7mx2[5]
+ jmp l1
+vox7m10: mov al, vox7mx2[2]
+ mov b vox7data, al
+ mov al, vox7mx2[5]
+ mov b vox7data[2], al
+ stc ; through
+ ret
+vox7jl dw vox7m0, vox7m1, vox7m0, vox7m3, vox7m4, vox7m5, vox7m6, vox7m10
+vox7mx db escp, '=c', escp, '=A', escp, '=q', escp, '=F'
+ db escp, '=B', escp, 'OT', escp, 'OP', escp, 'OM', escp,'Or'
+vox7mx2 db escp, 'P5', escp, 'V5', escp, 'N1', 0
+; end of vox7menu
+vox8menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox8jl[bx]
+vox8m1: xor ax, ax
+ jmp > l1
+vox8m3: call get1voice
+ inc ax
+l1: call set1voice
+ call get1voice
+ call sendstring
+vox8m0: clc ; not through
+ ret
+vox8m10: call get1voice
+ add al, '0'
+ mov b vox8data, al
+ stc ; through
+ ret
+vox8jl dw vox8m0, vox8m1, vox8m0, vox8m3, vox8m0, vox8m0, vox8m0, vox8m10
+vox8mx db '[:say line][:np]', 0
+; end of vox8menu
+vox9menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox9jl[bx]
+vox9m1: mov w vox9mx[2],'05'
+ mov b vox9mx[6],'5'
+ mov b vox9mx[9],'1'
+ mov b vox9mx[12],'m'
+l1: mov bx, offset vox9mx
+ call put2string
+vox9m0: clc ; not through
+ ret
+vox9m3: mov bx, vox9mx[2]
+ cmp bx, '00' ; do nothing if minimum
+ je vox9m0
+ dec bh
+ cmp bh, '0'-1
+ ja > l2
+ mov bh, '9'
+ dec bl
+ jmp > l2
+vox9m4: mov bx, vox9mx[2]
+ cmp bx, '99' ; ignore if maximum
+ je vox9m0
+ inc bh
+ cmp bh, '9'+1
+ jb > l2
+ mov bh, '0'
+ inc bl
+l2: mov w vox9mx[2], bx
+ jmp l1
+vox9m5: mov al, vox9mx[6]
+ cmp al, '0' ; ignore if minimum
+ je vox9m0
+ dec al
+ jmp > l2
+vox9m6: mov al, vox9mx[6]
+ cmp al, '9' ; ignore if maximum
+ if ne inc al
+l2: mov b vox9mx[6], al
+ jmp l1
+vox9m10: mov ax, vox9mx[2]
+ mov w vox9data, ax
+ mov al, vox9mx[6]
+ mov b vox9data[3], al
+ mov ah, vox9mx[9]
+ mov al, vox9mx[12]
+ mov w vox9data[4], ax
+ stc ; through
+ ret
+vox9jl dw vox9m0, vox9m1, vox9m0, vox9m3, vox9m4, vox9m5, vox9m6, vox9m10
+vox9mx0 db cr, 1, '@'
+vox9mx db cr, 1, '50P', 1, '5F', 1, '1X', 1, 'I', 1, 'T', 0
+; end of vox9menu
+vox10menu: ; entry
+ mov bx, ax ; 0, 2, 4, ... 14
+ jmp w vox10jl[bx]
+vox10m1: mov b vox10mx[2],'0'
+ mov b vox10mx[6],'h'
+l1: mov al, vox10mx[2]
+ mov ah, vox10mx[6]
+ mov w vox10data, ax
+ mov bx, offset vox10mx
+ call put2string
+vox10m0: clc ; not through
+ ret
+vox10m3: mov al, vox10mx[2] ; pitch
+ cmp al, '0'
+ je vox10m0
+ dec al
+ jmp > l2
+vox10m4: mov al, vox10mx[2] ; pitch
+ cmp al, '9'
+ je vox10m0
+ inc al
+l2: mov b vox10mx[2], al
+ jmp l1
+vox10m5: mov al, vox10mx[6] ; tone
+ cmp al, 'a'
+ je vox10m0
+ dec al
+ jmp > l2
+vox10m6: mov al, vox10mx[6] ; tone?
+ cmp al, 'z'
+ je vox10m0
+ inc al
+l2: mov b vox10mx[6], al
+ jmp l1
+vox10m10: mov al, vox10mx[2]
+ mov ah, vox10mx[6]
+ mov w vox10data, ax
+ stc ; through
+ ret
+vox10jl dw vox10m0, vox10m1, vox10m0, vox10m3, vox10m4, vox10m5, vox10m6
+ dw vox10m10
+vox10mx db 5, 'P6', spc, 5, 'TH', spc, 0
+; end of vox10menu
+set1voice: ; entry
+ cmp ax, 9
+ if nl xor ax, ax
+ shl ax, 1
+ mov bx, ax
+ mov bx, dec4list[bx]
+ mov al, [bx]
+ mov vox8mx[14], al
+ mov bx, offset vox8mx
+ jmp put8string
+dec4list dw dec0name, dec1name, dec2name, dec3name
+ dw dec4name, dec5name, dec6name, dec7name, dec8name
+; end of set1voice
+get1voice: ; entry
+ mov al, vox8mx[14]
+ xor bx, bx
+ mov cx, 10
+l1: push bx
+ mov bx, dec4list[bx]
+ mov ah, [bx]
+ mov dx, bx
+ pop bx
+ cmp ah, al
+ je > l2
+ inc bx
+ inc bx
+ loop l1
+l2: mov ax, bx
+ shr ax, 1
+ mov bx, dx
+ ret
+; end of get1voice
+;
+save1screen: ; entry
+; bx = address of masks, es = video segment
+ call fix4regs ; sets cx and dx
+ push bx
+ mov bx, [bx] ; masks
+ mov w last1in, 0 ; not from kbd
+l1: mov di, dx ; top left
+ mov si, w i8vidoff
+ xor ax, ax
+ xchg al, dh
+ push dx ; left
+ shl ax, 1
+ shl dx, 1
+ add si, dx
+ mov dx, cx
+ mov cl, b i8width
+ mul cl
+ add si, ax
+ xor ch, ch
+ cmp cl, dl
+ if a mov cl, dl
+ pop ax
+ sub cx, ax
+l2: es mov ax, [si]
+ cmp al, spc ; ctrl char?
+ jl > l3
+ and ah, bl
+ cmp ah, bh
+ je > l4
+l3: mov al, spc
+l4: call save1data
+ inc si
+ inc si
+ loop l2
+ mov cx, dx
+ mov dx, di
+ inc dh
+ cmp dh, ch
+ jl l1
+ pop bx
+ ret
+; end of save1screen
+;
+i9keystroke: ; entry
+ mov b altkey, 0 ; clear alt status
+ and w states1, not continuous
+ jmp w i9state
+i9st1: call insert ; get scan target
+ stc ; drop char
+ ret
+i9st2: cmp al, prefix ; buzzing -- for dos?
+ jne > l1
+ mov w i9state, offset i9direct ; back to direct mode
+ and b states0, not buzzer
+ clc ; keep char
+ ret
+l1: mov w i9state, offset i9st4 ; review mode
+i9st4: test w states1, graphics
+ if z es mov [28], bx
+ call stopvox
+ call i9provox
+ stc ; drop char
+ ret
+; end of i9keystroke
+i9tell: ; entry
+ mov ah, al
+ es mov al, [23] ; get status
+cmp w i9state, offset i9st4
+ je > l1
+ test b states0, enhanced
+ jz > l2 ; if not
+l1: es and b [23], not bit5 ; clear numlock
+ and ah, not bit5
+l2: and ax, ro shl 8 or ro
+ cmp ah, al ; did it change?
+ je ret ; if not
+ xor ah, al ; keep changes
+ mov si, ax
+ mov bx, offset i9tlm5 ; shift
+ test ah, 2 or 1 ; bits 1 or 0?
+ jz > l1 ; if neither
+ mov ah, altkey ; update altkey
+ mov b altkey, al
+ and ah, 2 or 1 ; keep shift bits
+ je ret ; if neither
+ jmp sendstring
+l1: test ah, 8 or 4 ; alt or ctrl?
+ jz > l1 ; if neither
+ mov ah, altkey ; update altkey
+ mov b altkey, al
+ and ah, 8 or 4 ; keep old ctrl and alt
+ je ret ; if neither
+ call stopvox
+ mov bx, offset i9tlm6 ; control
+mov ax, si
+ and al, bit3 ; alt?
+ jne ret
+ cmp ah, bit3 ; alt?
+ if e mov bx, offset i9tlm4 ; alt
+ jmp sendstring
+ ret
+l1: test ah, bit6 ; cap lock?
+ jz > l1 ; if not
+ mov bx, offset i9tlm1
+ call sendstring
+ mov ax, si
+ and al, bit6
+ jmp lockstatus
+l1: test ah, bit5 ; num lock?
+ jz > l1 ; if not
+ cmp w i9state, offset i9st2 ; prefix numlock?
+ jne > l2 ; if not
+ mov w i9state, offset i9direct
+ and b states0, not buzzer
+ xor al, bit5 ; reverse the change
+ es mov [23], al
+ and w states1, not (passthru or digit2 or ph2flag or ph1flag)
+ es test b [150], bit4 ; enhanced?
+ jz > l2
+ xor b states0, enhanced
+ mov bx, offset i9tlm7
+ call sendstring
+ mov al, states0
+ and ax, enhanced
+ jmp short lockstatus
+l2: mov bx, offset i9tlm2
+ call sendstring
+cmp w i9state, offset i9st4
+ je ret
+ mov ax, si
+ and al, bit5
+ test b states0, enhanced
+ jz lockstatus
+ ret
+l1: cmp w i9state, offset i9st2 ; prefix scroll lock?
+ jne > l1 ; if not
+ mov w i9state, offset i9direct
+ and b states0, not buzzer
+ xor al, bit4 ; reverse the change
+ es mov [23], al
+ or w states1, closed
+ ret
+l1: mov bx, offset i9tlm3
+ call sendstring
+ mov ax, si
+ and al, bit4
+lockstatus: ; entry
+ mov bx, offset locksm1
+ test al
+ if nz mov bx, offset locksm2
+ jmp sendstring
+locksm1 db 'off', ro, 0
+locksm2 db 'on', ro, 0
+; end of lockstatus
+; end of i9tell
+i9direct: ; entry
+ cmp b f7flag, 1 ; kill speech?
+if na call stopvox
+ and w states1, not ph2flag
+ add w states1, ph1flag
+ and w states1, not ph1flag
+ test w states1, digit2
+ jnz > l1
+ mov bx, offset table5 - 4 ; simple things
+ mov dx, w revcursor
+ test b states0, enhanced
+ jz > l2 ; if not
+ mov bx, offset table4 - 4 ; enhanced things
+ test w states1, joined
+ if nz mov dx, w doscursor
+l2: and b states0, not routing
+ test w states1, passthru
+ jnz > l2 ; if so
+ call dispatch
+ test b states0, enhanced
+ jz > l3 ; if not
+ call isnumber
+ jnc > l3 ; if not
+ mov b digit, al
+ call save2data
+ or w states1, digit2
+ stc ; found
+ ret
+l1: and w states1, not digit2
+ call isnumber
+ jnc > l1 ; if not
+ call get2digits
+ test ax
+ jz > l1
+ xchg ah, al
+ dec ah
+ cmp ah, b i8line
+ ja > l1
+ mov dx, ax
+ jmp rvw05
+l1: mov bx, offset i9pm04 ; error message
+ call sendstring
+ stc ; found
+ ret
+l2: and w states1, not passthru
+ and b states0, not buzzer
+l3: clc ; not found
+ ret
+i9dr07: call exitroute
+ stc ; found
+ ret
+i9dr08: cmp b prefix, al
+ jne l3
+ mov w i9state, offset i9st2
+ or b states0, buzzer
+ stc ; found
+ ret
+i9dr09: mov w revcursor, dx ; join cursors
+ or w states1, joined
+ mov bx, offset i9drm1
+ call sendstring
+ stc ; found
+ ret
+i9dr10: or w states1, passthru
+ or b states0, buzzer
+ stc ; found
+ ret
+i9dr11: call search
+ jc ret
+ call sendstring
+ stc
+ ret
+i9dr13: mov w i9state, offset i9st1
+ mov b scansize, 0
+ mov bx, offset i9pm06
+ call sendstring
+ or b states0, buzzer
+ stc ; found
+ ret
+i9dr14: call scanatt
+ jc ret
+ call sendstring
+ stc
+ ret
+i9drm1 db 'go to cursor', 0
+; end of i9direct
+enter_review: ; entry
+ test b states0, enhanced
+ jz > l1
+ stc ; error
+ ret
+l1: mov w revcursor, dx
+ mov es, 64
+ es mov al, [23] ; save old status
+ mov b old2lox, al
+ es and b [23], not bit5 ; clear numlock
+ mov w i9switch, offset i9sw02 ; enter review
+ and w states1, not (digit2 or ph1flag or ph2flag)
+ clc ; okay
+ ret
+; end of enter_review
+start_openport: ; entry
+ cmp al, '1' ; com1?
+ jb > l1
+ cmp al, '4' ; com4?
+ ja > l1
+ mov bl, al ; save com#
+ and ax, 4 or 2 or 1
+ add ax, 3
+ cmp ax, voxport
+ je > l1
+ xor ax, ax
+ mov es, ax
+ mov b openport_count, al
+ mov b openport_watch, al
+ mov al, bl ; get com# back
+ mov ah, bit4 ; irq4
+ es mov dx, [1024] ; com1
+ cmp al, '1'
+ je > l2
+ es mov dx, [1028] ; com3
+ cmp al, '3'
+ je > l2
+ mov ah, bit3 ; irq3
+ es mov dx, [1026] ; com2
+ cmp al, '2'
+ je > l2
+ es mov dx, [1030] ; com4
+ cmp al, '4'
+ je > l2
+ xor dx, dx ; error
+l2: test dx
+ jnz > l2
+l1: mov bx, offset cptrm
+ stc ; error
+ ret
+l2: mov b int_mask, ah ; irq mask
+ mov w combase, dx
+ cli ; hold interrupts
+ cmp ah, bit4 ; irq4?
+ je > l1 ; if yes
+ es mov ax, [44]
+ mov w old_irq [0], ax
+  es mov ax, [46]
+ mov w old_irq [2], ax
+ es mov w [44], offset request
+ es mov [46], ds
+ jmp > l2
+l1:  es mov ax, [48]
+ mov w old_irq [0], ax
+  es mov ax, [50]
+ mov w old_irq [2], ax
+ es mov w [48], offset request
+ es mov [50], ds
+l2: inc dx ; interrupt enable register
+ mov al, 1
+ out dx, al
+ inc dx
+ inc dx ; line control register
+ mov al, 83h
+ out dx, al
+ sub dx, 3 ; back to base address
+ mov ax, 12 ; 9600 baud
+ out dx, al
+ add dx, 3 ; back to line control register
+ mov al, 3 ; 8n1
+ out dx, al
+ inc dx ; set modem-control register
+ mov al, 8 or 2 or 1 ; dtr rts and out2 bits
+ out dx, al
+ sub dx, 4 ; back to base address
+ in al, dx ; clear rx hold register
+ in al, 33 ; get pic status
+ push ax
+ and al, int_mask
+ mov b old_mask, al
+ pop ax
+ or al, int_mask
+ xor al, int_mask
+ out 33, al
+ sti ; take interrupts
+ or w states1, dataflow
+ mov bx, offset i9pm38
+ clc ; success
+ ret
+cptrm db ro, 'port not open', 0
+; end of start_openport
+close_openport: ; entry
+ mov dx, combase
+ inc dx ; set interrupt-enable register
+ xor al, al
+ out dx, al
+ in al, 33 ; get pic status
+ or al, old_mask
+ out 33, al
+ and w states1, not dataflow
+ cli ; hold interrupts
+ mov es, 0
+ cmp b int_mask, bit4 ; irq4?
+ je > l1 ; if yes
+ mov ax, old_irq[0]
+ es mov [44], ax
+ mov ax, old_irq[2]
+ es mov [46], ax
+ jmp > l2
+l1: mov ax, old_irq[0]
+ es mov [48], ax
+ mov ax, old_irq[2]
+ es mov [50], ax
+l2: sti ; take interrupts
+ ret
+; end of close_openport
+request: push ax ; read data for openport
+ push ds, cx, dx
+ mov ds, cs
+ mov dx, combase
+ in al, dx ; accept char
+ cmp al, bsp ; check for garbage
+ je > l1 ; if okay
+ cmp al, tab
+ je > l1 ; if okay
+ cmp al, cr
+ je > l1 ; if okay
+ cmp al, spc
+ jb > l2 ; if garbage
+ test al, bit7
+ jnz > l2 ; if garbage
+l1: cbw ; stuff it
+ mov cx, ax
+ inc b openport_count
+ cmp b openport_count, 14
+ jb > l1
+ mov ax, 8 or 1 ; stop sending -- drop rts
+ add dx, 4
+ out dx, al
+ and w states1, not dataflow
+l1: mov ax, 5 shl 8
+ pushf
+ call d i22return+1
+l2: pop dx, cx, ds
+ mov ax, 32
+ out 32, al
+ pop ax
+ iret ; end of request
+openport_count db 0
+openport_watch db 0
+exit_review: ; entry
+ mov es, 64
+ mov al, old2lox
+ es mov [23], al ; restore old status
+ mov bx, offset i9pm02 ; exit review
+ ret
+; end of exit_review
+; end of 3i9code.a
+
+
