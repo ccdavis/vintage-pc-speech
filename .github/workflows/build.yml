@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: uv (used by the data/cwsdpmi tools)
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh && echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: toolchains
         run: TOOLS=$HOME/tools bash run/get-toolchains.sh
       - name: build the DOS programs
