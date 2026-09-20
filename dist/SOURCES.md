@@ -1,7 +1,7 @@
 # Accessible DOS talking disk: source distribution
 
 This bundle holds every source we wrote or modified for the talking disk, plus the build harness.
-Binaries are distributed separately (a11y386.zip, espk386.zip, talkdisk.img). Build hosts: Linux
+Binaries are distributed separately (a11y386.zip, espk386.zip, talkdisk.img, talkpc.img, talkpc.zip). Build hosts: Linux
 with the cross toolchains listed below; DOS builds were tested under QEMU, DOSBox-X, a 386 DX-25
 (DR-DOS 7.02) and are aimed at any PC from an XT up.
 
@@ -10,6 +10,8 @@ with the cross toolchains listed below; DOS builds were tested under QEMU, DOSBo
 | `src/sbtalk/` | SBTALK, the resident synthesizer (virtual DoubleTalk on INT 14h, Sound Blaster DMA and PC speaker outputs, engines SAM / Klatt / 1983 voice), SAY.EXE, host harness | ours (GPL v3+ as a whole, because of the engines below) |
 | `src/sbtalk/sam/`, `src/sbtalk/mksam.py` | SAM engine, generated from the vendored `src/sam-upstream` with streaming output, 16-bit fixes and the bug fixes of the review | SAM: reverse-engineered 1982 abandonware, no licence (github.com/s-macke/SAM). Prototype and fallback voice only; replaceable |
 | `src/klatt/` | Fixed-point Klatt synthesizer (`klatt_fx.c`), rsynth-derived English rules and Holmes tables, 386 assembly hot paths, parity and WER tools | klatt 3.04 port: GPL v3+ (Jon Iles / Nick Ing-Simmons); rsynth parts: LGPL v2+; ours: GPL v3+ |
+| `src/dectalk/` | DECtalk built for DOS: build files, `glue/` (host and DOS front ends), `dtalkd/` (the resident wrapper, engine glue, ASK.EXE), `patches/upstream.diff` (3 hunks); `run/get-dectalk.sh` fetches the engine | engine: github.com/dectalk/dectalk (develop 69ebb459), Fonix proprietary LICENCE, not included here; our glue GPL v3+ |
+| `share/talkpc/` | Boot files of the talking disk for newer PCs (FreeDOS + JEMMEX 5.84 + HDPMI32i + SBEMU 1.0.0-beta.6 + DECtalk + Provox) | JEMMEX/HDPMI: Japheth (Artistic/GPL), SBEMU: GPL v2 (github.com/crazii/SBEMU); binaries only in the release zips |
 | `src/espeak/lib/`, `espk/`, `espkd/`, `tools/`, `Makefile` | eSpeak NG subset (18 files, small diff in `results/lib-vs-upstream.diff`), the integer frame-to-Klatt mapping, ESPK.EXE and the resident ESPKD.EXE shell wrapper | eSpeak NG: GPL v3+ (commit noted in NOTES.md); ours: GPL v3+ |
 | `src/retro/` | The 1983 SPEECH.COM voice as an engine: table generator from horndrv's PHONEME.C | data: horndrv (Jon Hornstein, "public domain as freeware" + GPL); ours: GPL v3+ |
 | `src/horndrv/` | horndrv / TALK.SYS 1992-99 source as retrieved (reference for the 1983 voice) | Jon Hornstein, freeware + GPL text included |

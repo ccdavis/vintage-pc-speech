@@ -1,0 +1,29 @@
+== V7-floppy-seq-K11025
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O1 /K11025] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Welcome to the talking disk. Press 1 if you can hear this. Otherwise wait ten seconds.] new audio 17.5 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /O0] new audio 6.2 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Now trying the headphone output. Press 1 if you can hear this.] new audio 15.0 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0 /K11025] new audio 8.1 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\nest.bat] new audio 42.0 s, rms 2238, peak 27674 alive
+== V8-floppy-seq-K22050
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O1] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Welcome to the talking disk. Press 1 if you can hear this. Otherwise wait ten seconds.] new audio 17.5 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /O0] new audio 6.2 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Now trying the headphone output. Press 1 if you can hear this.] new audio 15.0 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 7.9 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\nest.bat] new audio 42.0 s, rms 2234, peak 27888 alive
+== V9-drainfix-K11025
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O1 /K11025] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd2 com3 /say Welcome to the talking disk. Press 1 if you can hear this. Otherwise wait ten seconds.] new audio 19.5 s, rms 377, peak 4133 alive
+  [c:\sbemu\sbemuv /O0] new audio 6.2 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd2 com3 /say Now trying the headphone output. Press 1 if you can hear this.] new audio 17.0 s, rms 354, peak 4196 alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0 /K11025] new audio 8.1 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd2 /C c:\dectalk\nest.bat] new audio 42.0 s, rms 2239, peak 27762 alive
+== V10-packed
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkdu /C c:\dectalk\nest.bat] new audio 42.0 s, rms 2221, peak 27888 alive
+DONE

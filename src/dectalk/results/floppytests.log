@@ -1,0 +1,29 @@
+== TPF1
+menu+choice: new audio 29.7 s, rms 2632, peak 28072
+after choice (Provox + ready): new audio 12.2 s, rms 669, peak 4803
+say command: new audio 9.9 s, rms 477, peak 4772
+help screen via Provox: new audio 12.4 s, rms 673, peak 4842
+EIP=0000018c EFL=000a0246 [---Z-P-] CPL=3 II=0 A20=1 SMM=0 HLT=0
+CS =0070 00000700 0000ffff 0000f300 DPL=3 DS16 [-WA]
+== TPF2
+menu+choice: new audio 29.6 s, rms 2595, peak 27698
+after choice (Provox + ready): new audio 12.1 s, rms 658, peak 4766
+say command: new audio 9.8 s, rms 493, peak 4466
+help screen via Provox: new audio 12.4 s, rms 649, peak 4565
+EIP=0000021a EFL=000a0246 [---Z-P-] CPL=3 II=0 A20=1 SMM=0 HLT=0
+CS =0070 00000700 0000ffff 0000f300 DPL=3 DS16 [-WA]
+== TPF3
+menu+choice: new audio 29.6 s, rms 2626, peak 27940
+after choice (Provox + ready): new audio 12.2 s, rms 844, peak 4115
+say command: new audio 9.9 s, rms 851, peak 3774
+help screen via Provox: new audio 12.4 s, rms 851, peak 3774
+EIP=0050b7d0 EFL=00100002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+CS =0010 00917000 00524fff 00c09b00 DPL=0 CS32 [-RA]
+== talkpc
+menu+choice: new audio 29.6 s, rms 2628, peak 27792
+after choice (Provox + ready): new audio 12.2 s, rms 665, peak 4811
+say command: new audio 9.8 s, rms 480, peak 4772
+help screen via Provox: new audio 12.4 s, rms 637, peak 4588
+EIP=00000219 EFL=000a0246 [---Z-P-] CPL=3 II=0 A20=1 SMM=0 HLT=0
+CS =0070 00000700 0000ffff 0000f300 DPL=3 DS16 [-WA]
+DONE

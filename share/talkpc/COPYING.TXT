@@ -1,0 +1,6 @@
+The files of talkpc.img as a plain directory.  To use them without writing the image:
+copy everything onto a floppy (or a DOS partition) that is already bootable with FreeDOS
+(FORMAT A: /S or SYS A: from any FreeDOS system), overwriting its KERNEL.SYS, COMMAND.COM,
+FDCONFIG.SYS and FDAUTO.BAT.  For MS-DOS or DR-DOS disks rename FDCONFIG.SYS to CONFIG.SYS
+and FDAUTO.BAT to AUTOEXEC.BAT (and drop the DOSDATA line); the programs themselves do not
+depend on the FreeDOS kernel.  README.TXT describes the disk.

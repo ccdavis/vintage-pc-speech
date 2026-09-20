@@ -1,0 +1,55 @@
+dt11k                                    WER  12.4%  (30/241)
+      [ 2/10] Hello. This is the Clad Synthesizer speaking on free dust.
+      [ 0/ 9] The quick brown fox jumps over the lazy dog.
+      [ 0/ 9] Please open the file and read the first line.
+      [ 1/ 9] Good morning. Today is Saturday, the evening of September.
+      [ 5/ 9] These green redder is loading. Press this cave to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 0/11] Turn left at the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty, can you charge it?
+      [ 2/11] The meeting starts at half past will end the small room.
+      [ 5/10] sheep or bread will condex at the corner shop.
+      [ 0/ 9] It will rain this afternoon, so take your umbrella.
+      [ 5/10] 059 27 3 1 8 4 6
+      [ 0/10] the children are playing in the garden behind the house.
+      [ 0/12] Put the red book on the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 8/10] We prayed a lot and leaves raw platforms even at noon.
+      [ 0/ 9] Close the door quietly, the baby is sleeping upstairs.
+      [ 0/12] We watched a long movie and then walked home in the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 0/10] Please call the doctor and ask about the test results.
+      [ 0/10] 4-8-1-5-9-3-7-2-0-6
+      [ 0/11] His new car is dark blue with a large silver stripe.
+      [ 0/10] The weather forecast says it will be sunny this weekend.
+      [ 2/10] 25 people came to the party on Friday night.
+dt8k                                     WER  12.4%  (30/241)
+      [ 2/10] Hello. This is the class synthesizer speaking on free dust.
+      [ 1/ 9] The quick round fox jumps over the lazy dog.
+      [ 1/ 9] Please open the file and red the first line.
+      [ 2/ 9] Good morning. Tuesday is Saturday, the evening of September.
+      [ 5/ 9] These green rhetoric is loading. Press this cave to stop.
+      [ 0/10] 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+      [ 1/11] Turn left hand the next corner and wait for the bus.
+      [ 0/10] My phone battery is almost empty, can you charge it?
+      [ 2/11] The meeting starts at half past we'll end the small room.
+      [ 0/10] She bought bread, milk and eggs at the corner shop.
+      [ 0/ 9] It will rain this afternoon, so take your umbrella.
+      [10/10] 05927-31846
+      [ 0/10] the children are playing in the garden behind the house.
+      [ 0/12] Put the red book on the top shelf next to the window.
+      [ 0/11] I need to send an email to my sister before dinner.
+      [ 6/10] The trade to Lotten leaves Rob Platt from Seaman at noon.
+      [ 0/ 9] Close the door quietly, the baby is sleeping upstairs.
+      [ 0/12] We watched a long movie and then walked home in the dark.
+      [ 0/ 9] The coffee machine in the kitchen is broken again.
+      [ 0/10] Please call the doctor and ask about the test results.
+      [ 0/10] 4-8-1-5-9-3-7-2-0-6
+      [ 0/11] His new car is dark blue with a large silver stripe.
+      [ 0/10] The weather forecast says it will be sunny this weekend.
+      [ 0/10] Twenty-five people came to the party on Friday night.
+
+SUMMARY (base.en stable)
+  dt11k                                     12.4%
+  dt8k                                      12.4%
+exit=0

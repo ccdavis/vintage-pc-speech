@@ -1,0 +1,32 @@
+== V1-known-good
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\pvtest.bat] new audio 42.1 s, rms 2230, peak 27888 alive
+== V2-K11025
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0 /K11025] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\pvtest.bat] new audio 42.0 s, rms 2226, peak 27750 alive
+== V3-rerun
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O1] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /O0] new audio 6.2 s, rms 0, peak 0 alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 7.9 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\pvtest.bat] new audio 42.0 s, rms 2238, peak 27787 alive
+== V4-say-twice
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Testing one.] new audio 11.9 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd com3 /say Testing two.] new audio 12.1 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\pvtest.bat] new audio 42.0 s, rms 2228, peak 28347 alive
+== V5-nested
+  [c:\sbemu\vdpmi.exe /DPMIMEM=32]  alive
+  [c:\sbemu\sbemuv /A220 /I5 /D1 /T6 /O0] new audio 6.8 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\nest.bat] new audio 42.0 s, rms 2232, peak 27787 alive
+== V6-jemmex
+  [c:\sbemu\jemmex.exe]  alive
+  [c:\sbemu\jload c:\sbemu\qpiemu.dll]  alive
+  [c:\sbemu\hdpmi32i -r -x]  alive
+  [c:\sbemu\sbemu /A220 /I5 /D1 /T6 /O0] new audio 6.7 s, rms 0, peak 0 alive
+  [c:\dectalk\dtalkd /test] new audio 46.6 s, rms 249, peak 4433 alive
+  [c:\dectalk\dtalkd /C c:\dectalk\pvtest.bat] new audio 42.1 s, rms 2232, peak 27888 alive
+DONE

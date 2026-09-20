@@ -31,6 +31,20 @@ use `binl64/`, set `WATCOM=$PWD/../tools/ow`). Both are git-ignored downloads.
 
 The disk's files live in `share/talkdisk/` (FDCONFIG.SYS, FDAUTO.BAT, HELP.BAT, BLASTER.BAT, README.TXT).
 
+## DECtalk for newer PCs (2005-2010 laptops, Intel HD Audio)
+
+`src/dectalk/` builds DECtalk (github.com/dectalk/dectalk, ARM7 single-threaded configuration,
+dictionary compiled in; the upstream clone in `src/dectalk-upstream/` is git-ignored and not
+mirrored, its licence is Fonix proprietary) with DJGPP: `DTSAY.EXE` (one shot) and `DTALKD.EXE`
+(resident, the ESPKD framework: DoubleTalk on COM3 via INT 14h, Sound Blaster DMA).  On Intel HD
+Audio machines the Sound Blaster is SBEMU (`share/sbemu/`, VDPMI build).  See `src/dectalk/NOTES.md`.
+
+    make -C src/dectalk dos resident stage     # DTSAY.EXE, DTALKD.EXE, packed copy in share/talkpc/
+    run/mktalkpc.sh                            # dist/talkpc.img: bootable floppy for those PCs (spoken first-boot menu)
+    run/testtalkpc.sh                          # boot a copy on emulated HD Audio (SOUND=hda), answer the menu, check audio
+    dist/talkpc/                               # the same files as a directory (run/imgextract.py), see COPYING.TXT there
+    SOUND=hda MEM=256 run/boot.sh              # LiveCD with an ICH9 HDA instead of the SB16 (guest: c:\sbemu\vdpmi, c:\sbemu\sbemuv)
+
 ## Running
 
     run/boot.sh                          # boot the LiveCD in Live mode, console on COM1, waits for the prompt
@@ -67,3 +81,16 @@ Note: the snap-packaged dosbox-x cannot see /tmp, so keep its mounts under the h
     # Provox: assemble in DOSBox-X (A86 needs DOS), link on the host
     dosbox-x -conf src/provox7/build/pv.conf -nogui -nomenu     # after copying *.A, A86.COM, A86.LIB into build/
     WATCOM=../tools/ow ../tools/ow/binl64/wlink system dos file src/provox7/build/PROVOX7.OBJ name PROVOX7T.EXE
+
+## Publishing
+
+The public mirror is https://github.com/ccdavis/vintage-pc-speech (working tree `~/vintage-pc-speech`).
+Sources are git content there; the four artifacts are release assets.
+
+    run/sync-public.sh                 # copy the source subset (same list as mksrcdist.sh) into the mirror
+    (cd ~/vintage-pc-speech && git add -A && git commit -m "..." && git push)
+    (cd ~/vintage-pc-speech && ./release.sh --publish [vTAG])   # rebuild everything and upload a release
+                                       # or, from here: run/mkdist.sh; run/mktalkdisk.sh; run/mksrcdist.sh; gh release create ... dist/*
+
+The mirror's GitHub Actions workflow only compiles the DOS programs as a check (it fetches the toolchains);
+the disk image needs QEMU with KVM and the FreeDOS images, so releases are built locally.

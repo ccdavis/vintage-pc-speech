@@ -48,6 +48,18 @@ opens a DOS shell with Provox reading the screen through the eSpeak voice; EXIT 
 The CWSDPMI.EXE on this disk has paging disabled, which ESPKD needs; keep it beside ESPKD. It is not resident yet,
 so it cannot drive the screen reader until the next phase.
 
+DECTALK (second floppy, espk386.zip): DTALKD.EXE is DECtalk built for DOS, resident like ESPKD
+(a DoubleTalk on COM3 for Provox, JAWS and the others), 11 kHz, the best voice of the set and
+about 3x cheaper than the Klatt engine (borderline real time on the 386 DX-25, use DTALKD /8K
+there). From the disk's drive type   DTALK   (Sound Blaster),   DTALK SPK   (PC speaker) or
+DTALK SBEMU   (no Sound Blaster: loads HDPMI32i and SBEMU, which emulate one on Intel HD Audio,
+AC97 and PCI sound cards; Pentium or better). DTALK tries the Sound Blaster first and falls
+back to SBEMU by itself. Provox itself comes from disk 1 (GO copies it to C:\SPEECH); without it
+DTALK still leaves DEC talk resident as a DoubleTalk on COM3 for any other screen reader. SBEMU /O0 switches to the headphone output, SBEMU /VOL50 lowers the
+level. Machines that never had DOS: boot talkpc.img (or the files of talkpc.zip on a FreeDOS
+boot floppy) instead; it is a FreeDOS floppy that loads JEMMEX + HDPMI32i + SBEMU + DECtalk +
+Provox and asks, in speech, which output works.
+
 UNIVERSAL DOS TEST (DR-DOS, MS-DOS, FreeDOS): after GO and ESPK, type   DOSTEST
 It records VER, MEM /C, your CONFIG.SYS, loads SBTALK high (LH), then starts the resident
 eSpeak in a child shell and records MEM there, into A:\DOSTEST.TXT. Run it once per memory

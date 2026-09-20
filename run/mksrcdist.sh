@@ -6,10 +6,11 @@ D="$(cd "$(dirname "$0")/.." && pwd)"; cd "$D"
 OUT=dist/a11y-src.zip; rm -f "$OUT"; rm -rf dist/src-tmp; mkdir -p dist/src-tmp
 git -C "$D/.." archive --format=tar HEAD -- \
   freedos/src/sbtalk freedos/src/klatt freedos/src/espeak freedos/src/retro freedos/src/horndrv \
-  freedos/src/sbsynth freedos/src/provox7 freedos/src/sam-upstream \
+  freedos/src/sbsynth freedos/src/provox7 freedos/src/sam-upstream freedos/src/dectalk freedos/share/talkpc \
   freedos/share/talkdisk freedos/dist/README.TXT 'freedos/dist/*.BAT' freedos/dist/SOURCES.md \
   freedos/run freedos/PLAN.md freedos/README.md freedos/research/01-dos-screen-readers.md \
   freedos/research/02-dos-software-speech.md freedos/research/03-old-dos-synths.md \
+  freedos/research/04-modern-dos-audio.md freedos/research/05-dectalk-sources.md \
   | tar -x -C dist/src-tmp
 # drop what does not belong in a source bundle
 find dist/src-tmp -name '*.EXE' -o -name '*.exe' -o -name '*.obj' -o -name '*.o' -o -name '*.wav' -o -name '*.raw' -o -name '*.map' \

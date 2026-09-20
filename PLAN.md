@@ -391,6 +391,11 @@ its real-mode block in a UMB when one exists; the child shell shows an `[E speak
 SBTALK and Provox are global TSRs (load them before TASKMGR); ESPKD is a DPMI client inside one
 session and should not be combined with it. `dist/DOSTEST.BAT` is the per-DOS test sheet.
 
+**Public repository (2026-09-20).** https://github.com/ccdavis/vintage-pc-speech mirrors the source subset
+(`run/sync-public.sh`), with the four artifacts as release assets (first release v2026.09.20) and a CI
+workflow that compiles the DOS programs with the fetched toolchains; full releases are built locally
+(`release.sh --publish` there).
+
 ## 6. Open questions and risks
 
 - Licences: Provox is GPL (good). SAM is unlicensed reverse-engineered abandonware: prototype only.

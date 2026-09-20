@@ -10,8 +10,13 @@ meant to work on MS-DOS as well.
 - `talkdisk.img`: a bootable 1.44 MB FreeDOS floppy. It speaks a menu on the PC speaker at the
   first boot, asks what sound hardware you have, saves the choice, and from then on boots straight
   into a talking DOS (the Provox screen reader reading everything through the synthesizer).
+- `talkpc.img` (and the same files as `talkpc.zip`): the talking disk for 2005-2010 PCs that have
+  no Sound Blaster (Intel HD Audio, AC97, PCI sound): FreeDOS + JEMMEX + HDPMI32i + SBEMU + DECtalk
+  + Provox, with a spoken first-boot menu that finds the working output. Pentium or better.
 - `a11y386.zip` and `espk386.zip`: the test floppies (blind-runnable batch files: `A:\GO`,
-  `TALK`, `TALKD`, `BENCH`, `DOSTEST`), see `dist/README.TXT`.
+  `TALK`, `TALKD`, `DTALK`, `BENCH`, `DOSTEST`), see `dist/README.TXT`. Disk 2 carries the
+  eSpeak and DECtalk voices and the SBEMU stack; `DTALK` uses a real Sound Blaster when there is
+  one and loads SBEMU otherwise.
 - `a11y-src.zip`: this source tree as a bundle (`dist/SOURCES.md` lists every component).
 
 ## What is inside
@@ -21,6 +26,8 @@ meant to work on MS-DOS as well.
 | `src/sbtalk` | SBTALK: resident synthesizer that looks like a serial DoubleTalk on a COM port (so Provox, JAWS for DOS, ASAP and others drive it unmodified), with Sound Blaster DMA output or PC speaker output, and three voices: SAM (1982 formant engine), a fixed-point Klatt, and the 1983 SPEECH.COM one-bit voice. 8086, 386 and XT builds. |
 | `src/klatt` | Fixed-point Klatt synthesizer with 386 assembly hot paths, rsynth-derived English rules, parity and intelligibility tools. |
 | `src/espeak` | eSpeak NG's English front end ported to DOS (DJGPP) driving the Klatt engine: `ESPK.EXE` (one shot, card or speaker) and `ESPKD.EXE`, the resident form that hosts a DOS shell and drives the screen reader. The most intelligible voice; needs a 386 and about 2 MB. |
+| `src/dectalk` | DECtalk built for DOS (DJGPP, the engine's single-threaded embedded configuration, dictionary compiled in): `DTSAY.EXE` and the resident `DTALKD.EXE`, the best voice of the set (Whisper WER 12 % against 30 % for the eSpeak port at 8 kHz). Only the glue, build files and patches are here; `run/get-dectalk.sh` fetches the engine source from github.com/dectalk/dectalk. |
+| `share/talkpc` | The boot files of the talking disk for newer PCs; `research/04`, `research/05` cover the hardware, SBEMU and the DECtalk source history. |
 | `src/retro`, `src/horndrv` | The 1983 voice (Andy McGuire's SPEECH.COM phonemes via Jon Hornstein's horndrv source). Practical on an XT. |
 | `src/provox7` | Provox 7 screen reader (GPL, 1985-1999, Kansys / Charles E. Hallenbeck), rebuilt from source with one fix. |
 | `share/talkdisk` | The talking disk's boot files. |
@@ -28,7 +35,7 @@ meant to work on MS-DOS as well.
 | `PLAN.md`, `research/` | Findings, measurements and the plan; surveys of DOS screen readers and synthesizers. |
 
 Measured on the 386 DX-25: SAM 2.1x real time, Klatt 0.5x (386) / real time on a 486, eSpeak 3x real
-time; resident memory 62 to 103 KB for the 16-bit builds, about 25 KB conventional for the resident
+time, DECtalk 0.95x at 11 kHz and 1.3x at 8 kHz (DOSBox-X estimate); resident memory 62 to 103 KB for the 16-bit builds, about 25 KB conventional for the resident
 eSpeak.
 
 ## Building
@@ -45,4 +52,7 @@ Individual builds: `make -C src/sbtalk install`, `make -C src/espeak dos ESPKD.E
 
 GPL v3 or later for the whole, because it includes eSpeak NG and the Klatt code (GPL v3+); rsynth-derived
 parts LGPL v2+; Provox GPL v2+; horndrv freeware + GPL. SAM (`src/sam-upstream`) is reverse-engineered
-1982 abandonware with no licence and is kept only as a prototype voice. See `dist/SOURCES.md`.
+1982 abandonware with no licence and is kept only as a prototype voice. DECtalk is Fonix proprietary
+code (the source has circulated since 2015; the rights holder is defunct); its source is not in this
+repository, only our glue and patches, but the release binaries contain the engine, as the community's
+NVDA add-ons and web builds do. See `dist/SOURCES.md`.

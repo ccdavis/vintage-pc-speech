@@ -15,9 +15,11 @@ jobs:
           make -C src/sbtalk SBTALK.EXE SBTALK3.EXE SBTALKXT.EXE SAY.EXE
           make -C src/espeak ESPK.EXE ESPKD.EXE
           make -C src/klatt klattsay   # the parity check needs the upstream float source (not in the repo)
+          bash run/get-dectalk.sh && make -C src/dectalk DTSAY.EXE DTALKD.EXE   # engine source fetched from github.com/dectalk/dectalk
       - uses: actions/upload-artifact@v4
         with:
           name: dos-programs
           path: |
             src/sbtalk/*.EXE
             src/espeak/*.EXE
+            src/dectalk/*.EXE
