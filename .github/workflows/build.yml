@@ -14,7 +14,7 @@ jobs:
           export TOOLS=$HOME/tools WATCOM=$HOME/tools/ow DJ=$HOME/tools/djgpp/bin
           make -C src/sbtalk SBTALK.EXE SBTALK3.EXE SBTALKXT.EXE SAY.EXE
           make -C src/espeak ESPK.EXE ESPKD.EXE
-          make -C src/klatt check
+          make -C src/klatt klattsay   # the parity check needs the upstream float source (not in the repo)
       - uses: actions/upload-artifact@v4
         with:
           name: dos-programs
