@@ -1,9 +1,48 @@
+This repo is a set of disk images you can create talking boot disks from, and collections of files you can put on to utility disks.  The main goal was to make vintage PCs as accessible to blind users.
+
+In particular, I wanted to make the software synthesizers as functional as possible. These days it's hard to come by a hardware synthesizer like DEC Talk Express or Double Talk (I was surprised how pricey they are on Ebay.)   I tried to cover most common cases: PC-speaker only; generic Soundblaster; or 21st Century sound hardware that can work through a Soundblaster emulation layer. I only tested on my 386-DX 25 and a PS/2 Model 30. The 386 has an AWE32 card but I only employed basic SB32 features and those should work on SB16 as well. I need to test with a vintage original Soundblaster still.
+
+The software here is intended to run on existing DOS installations and also offer Free DOS boot disk images to get up and running. If your main drive isn't a FAT filesystem you won't be able to read any hard drive files though. 
+
+I included the open source Provox screen reader. The speech gets  sent to a com port and Provox thinks it has a Double Talk hardware synth attached; really we have made a virtual Double Talk that uses the Soundblaster hardware or PC speaker as its output. In theory you could use other screen readers that work with Double Talk which is most of them.
+
+In the 1980s you could get speech out of an XT or AT system speaker but mostly it was a party trick since it was synchronous and not too useful  for screen readers. Later, Soundblaster improved default hardware speech a little but generating speech was sluggish at best -- still synchronous usually.  You could get SAM or (different I think? Dr. Sbaitso speech to work through a driver program as a TSR.
+
+This release is English only due to space limitations. It would be possible to make a version supporting Spanish for DECTalk and Espeak (Espeak has lots of supported languages.) I don't know about the others. Basically you would include just the language support you need as there isn't room for everything in RAM.
+
+Speech available: 
+
+Speaker:
+
+"Speech.com": Works on original PC through the speaker. It's meant as a bootstrap feature: It's slow but you can at least use it to recover files from an old PC.
+
+In theory we could send sound to the speaker from any of the other synthesizers but it would be slower and tie up the CPU more than using Soundblaster.
+
+Soundblaster 16/32:
+
+SAM:Requires at least a 386 SX or very fast 286. 16MHz 386 is barely capable.
+
+Custom Clat synthesizer built from Rsynth libraries: Decently intelligable, but requires more CPU, at least a 386-40 MHz.
+
+Espeak NG: Requires a 386-25 at least, faster than the custom Clat. Requires more memory though. You need at least 2M of RAM. Only supports English currently.
+
+DECTalk 5.0: Surprisingly this one is about as fast as the custom Clat synth. Realistically you need a 486-25 or better but a 386-40 should just about be able to keep up.
+
+The DECTalk is the best of all the synths. 
+
+There is a boot disk for newer systems using integrated Intel sound and you will want to use only DECTalk or Espeak on those.
+
+This whole project is AI-generated. There's no way I'd have been able to finish the work in less than a year otherwise. The AI could drive Qemu to test out many, many configurations and bug fixes all automatically, plus port from 16 bit C to  with Watcom to DJGPP 32 bit and back. 
+
+All Claude generated from this point 
+--------------------------------------------------
+
 # Vintage PC speech: a talking DOS disk for old PCs
 
 Screen reader plus software speech synthesis for DOS machines from an 8088 XT up to a 386 and
-beyond, playing through a Sound Blaster or the PC speaker. Built for a 386 DX-25 with a Sound
+beyond, playing through a Sound Blaster or the PC speaker. Tested on a 386 DX-25 with a Sound
 Blaster 32 running DR-DOS 7.02 and for an IBM PS/2 Model 30 (8086), tested under FreeDOS, and
-meant to work on MS-DOS as well.
+meant to work on MS-DOS as well. Also tested with QEMU as a 486 DX-100 and Pentium II.
 
 **Downloads** are on the [Releases](../../releases) page:
 
